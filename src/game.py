@@ -1,5 +1,6 @@
 import pygame
 from game_logic import Game
+from lava_game import LavaGame
 from main_menu import MainMenu
 
 def main():
@@ -13,10 +14,11 @@ def main():
     while running:
         # Afficher le menu principal
         menu = MainMenu()
-        start_game = menu.run()
+        mode = menu.run()
         
-        # Si le joueur clique sur "Start", lancer le jeu
-        if start_game:
+        # Vérifier le mode choisi
+        if mode == "NORMAL":
+            # Mode de jeu normal
             game = Game()
             result = game.run()
             
@@ -24,8 +26,17 @@ def main():
             if result == "QUIT":
                 running = False
             # Si le résultat est "MENU", on continue la boucle pour revenir au menu
+        elif mode == "LAVA":
+            # Mode de jeu lave
+            lava_game = LavaGame()
+            result = lava_game.run()
+            
+            # Si le résultat est "QUIT", quitter l'application
+            if result == "QUIT":
+                running = False
+            # Si le résultat est "MENU", on continue la boucle pour revenir au menu
         else:
-            # Si le joueur a quitté depuis le menu
+            # Si le joueur a quitté depuis le menu ou aucun mode n'a été sélectionné
             running = False
     
     # Quitter proprement pygame

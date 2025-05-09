@@ -93,17 +93,30 @@ class MainMenu:
         # Créer le bouton de démarrage
         button_width = 250  # Taille plus grande pour le bouton
         button_x = SCREEN_WIDTH//2
-        button_y = SCREEN_HEIGHT//2 + 200  # Positionné encore plus bas pour ne pas chevaucher le logo
-        self.start_button = Button(button_x, button_y, button_width, 0)  # Hauteur gérée automatiquement
+        
+        # Ajuster les positions verticales pour les deux boutons
+        start_button_y = SCREEN_HEIGHT//2 + 150
+        lava_button_y = SCREEN_HEIGHT//2 + 250
+        
+        # Créer les boutons
+        self.start_button = Button(button_x, start_button_y, button_width, 0)
+        
+        # Créer le bouton pour le mode lave avec le même style
+        self.lava_button = Button(button_x, lava_button_y, button_width, 0)
+        
+        # Modifier le texte du bouton lava mode
+        self.lava_button.text = create_pixel_text("LAVA MODE", self.lava_button.font, (0, 0, 0))
+        self.lava_button.text_rect = self.lava_button.text.get_rect(center=self.lava_button.rect.center)
+        self.lava_button.text_rect_pressed = self.lava_button.text.get_rect(center=(self.lava_button.rect.centerx, self.lava_button.rect.centery + 3))
         
         # Créer le fond
         self.background = Background()
         
     def run(self):
         running = True
-        start_game = False
+        result = None  # Pour stocker le résultat de l'action du menu
         
-        while running and not start_game:
+        while running and result is None:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -115,11 +128,15 @@ class MainMenu:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:  # Clic gauche
                         self.start_button.check_press(event.pos)
+                        self.lava_button.check_press(event.pos)
                 elif event.type == pygame.MOUSEBUTTONUP:
                     if event.button == 1:  # Relâchement du clic gauche
                         if self.start_button.check_release(event.pos):
-                            # Démarrer le jeu au relâchement du bouton
-                            start_game = True
+                            # Démarrer le jeu normal au relâchement du bouton
+                            result = "NORMAL"
+                        elif self.lava_button.check_release(event.pos):
+                            # Démarrer le mode lave
+                            result = "LAVA"
                             
             # Mettre à jour le fond
             self.background.update()
@@ -131,11 +148,12 @@ class MainMenu:
             # Dessiner le logo
             self.screen.blit(self.logo, self.logo_rect)
             
-            # Dessiner le bouton de démarrage
+            # Dessiner les boutons
             self.start_button.draw(self.screen)
+            self.lava_button.draw(self.screen)
             
             # Mettre à jour l'affichage
             pygame.display.flip()
             self.clock.tick(FPS)
             
-        return start_game 
+        return result 
