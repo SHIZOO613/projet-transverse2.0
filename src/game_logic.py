@@ -153,8 +153,8 @@ class Game:
         score_rect = score_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 20))
         self.screen.blit(score_text, score_rect)
         
-        # Restart instructions
-        restart_text = create_pixel_text("Press SPACE to restart", self.pixel_font_small, WHITE)
+        # Instruction pour retourner au menu
+        restart_text = create_pixel_text("Press SPACE for menu", self.pixel_font_small, WHITE)
         restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 70))
         self.screen.blit(restart_text, restart_rect)
     
@@ -171,12 +171,12 @@ class Game:
         """Handle all user input events."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return False
+                return "QUIT"
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    return False
+                    return "QUIT"
                 elif event.key == pygame.K_SPACE and self.game_over:
-                    self.reset()  # Restart the game
+                    return "MENU"  # Retourner au menu principal
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1 and not self.game_over:  # Left mouse button
                     self.player.start_charge()
@@ -184,14 +184,21 @@ class Game:
                 if event.button == 1 and not self.game_over:  # Left mouse button
                     mouse_x, _ = pygame.mouse.get_pos()
                     self.player.release_jump(mouse_x)
-        return True
+        return "CONTINUE"
     
     def run(self):
         """Main game loop."""
         running = True
+        result = "CONTINUE"
+        
         while running:
             # Handle events
-            running = self.handle_events()
+            result = self.handle_events()
+            
+            if result == "QUIT":
+                running = False
+            elif result == "MENU":
+                return "MENU"  # Signal to return to the menu
             
             # Update game state
             self.update()
@@ -202,5 +209,5 @@ class Game:
             # Update display and maintain framerate
             pygame.display.flip()
             self.clock.tick(FPS)
-        
-        pygame.quit() 
+            
+        return "QUIT"  # Le jeu s'est terminé par une demande de sortie 
