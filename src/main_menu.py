@@ -3,7 +3,7 @@ import os
 import sys
 from utils import create_pixel_text
 from background import Background
-from config import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, ASSETS_DIR, WHITE
+from config import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, ASSETS_DIR, WHITE, YELLOW, get_total_coins
 
 class Button:
     def __init__(self, x, y, width, height):
@@ -90,13 +90,17 @@ class MainMenu:
         # Positionner le logo
         self.logo_rect = self.logo.get_rect(centerx=SCREEN_WIDTH//2, top=SCREEN_HEIGHT//30)
         
+        # Police pour le compteur de pièces
+        self.font = pygame.font.Font(None, 36)
+        
         # Créer le bouton de démarrage
         button_width = 250  # Taille plus grande pour le bouton
         button_x = SCREEN_WIDTH//2
         
-        # Ajuster les positions verticales pour les deux boutons
-        start_button_y = SCREEN_HEIGHT//2 + 150
-        lava_button_y = SCREEN_HEIGHT//2 + 250
+        # Ajuster les positions verticales pour les trois boutons
+        start_button_y = SCREEN_HEIGHT//2 + 100
+        lava_button_y = SCREEN_HEIGHT//2 + 180
+        ice_button_y = SCREEN_HEIGHT//2 + 260
         
         # Créer les boutons
         self.start_button = Button(button_x, start_button_y, button_width, 0)
@@ -108,6 +112,14 @@ class MainMenu:
         self.lava_button.text = create_pixel_text("LAVA MODE", self.lava_button.font, (0, 0, 0))
         self.lava_button.text_rect = self.lava_button.text.get_rect(center=self.lava_button.rect.center)
         self.lava_button.text_rect_pressed = self.lava_button.text.get_rect(center=(self.lava_button.rect.centerx, self.lava_button.rect.centery + 3))
+        
+        # Créer le bouton pour le mode glace
+        self.ice_button = Button(button_x, ice_button_y, button_width, 0)
+        
+        # Modifier le texte du bouton ice mode
+        self.ice_button.text = create_pixel_text("ICE MODE", self.ice_button.font, (0, 0, 0))
+        self.ice_button.text_rect = self.ice_button.text.get_rect(center=self.ice_button.rect.center)
+        self.ice_button.text_rect_pressed = self.ice_button.text.get_rect(center=(self.ice_button.rect.centerx, self.ice_button.rect.centery + 3))
         
         # Créer le fond
         self.background = Background()
@@ -129,6 +141,7 @@ class MainMenu:
                     if event.button == 1:  # Clic gauche
                         self.start_button.check_press(event.pos)
                         self.lava_button.check_press(event.pos)
+                        self.ice_button.check_press(event.pos)
                 elif event.type == pygame.MOUSEBUTTONUP:
                     if event.button == 1:  # Relâchement du clic gauche
                         if self.start_button.check_release(event.pos):
@@ -137,6 +150,9 @@ class MainMenu:
                         elif self.lava_button.check_release(event.pos):
                             # Démarrer le mode lave
                             result = "LAVA"
+                        elif self.ice_button.check_release(event.pos):
+                            # Démarrer le mode glace
+                            result = "ICE"
                             
             # Mettre à jour le fond
             self.background.update()
@@ -148,9 +164,16 @@ class MainMenu:
             # Dessiner le logo
             self.screen.blit(self.logo, self.logo_rect)
             
+            # Dessiner le compteur total de pièces avec style pixel art juste sous le logo
+            total_coins = get_total_coins()
+            coin_text = create_pixel_text(f"Total Coins: {total_coins}", self.font, YELLOW)
+            coin_rect = coin_text.get_rect(centerx=SCREEN_WIDTH//2, top=self.logo_rect.bottom + 10)
+            self.screen.blit(coin_text, coin_rect)
+            
             # Dessiner les boutons
             self.start_button.draw(self.screen)
             self.lava_button.draw(self.screen)
+            self.ice_button.draw(self.screen)
             
             # Mettre à jour l'affichage
             pygame.display.flip()

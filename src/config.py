@@ -40,4 +40,17 @@ ANIMATION_SPEED = 0.15  # Seconds per frame for idle animation
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 ASSETS_DIR = os.path.join(PROJECT_ROOT, "assets")
-BG_ASSETS_DIR = os.path.join(ASSETS_DIR, "backgrounds") 
+BG_ASSETS_DIR = os.path.join(ASSETS_DIR, "backgrounds")
+
+# Gestion du nombre total de pièces
+TOTAL_COINS = 0
+
+def add_coins(count):
+    """Ajouter des pièces au compteur total"""
+    global TOTAL_COINS
+    TOTAL_COINS += count
+
+def get_total_coins():
+    """Récupérer le nombre total de pièces collectées"""
+    global TOTAL_COINS
+    return TOTAL_COINS 

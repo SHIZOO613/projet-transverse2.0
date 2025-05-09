@@ -7,19 +7,19 @@ from config import (
 )
 from utils import create_pixel_text
 from game_base import GameBase
-from lava_background import LavaBackground
+from ice_background import IceBackground
 from player import Player
-from platform import Platform, BreakablePlatform
+from platform import Platform, IcePlatform
 
-class LavaGame(GameBase):
-    """Mode de jeu 'lave' avec uniquement des plateformes cassables et un fond de lave."""
+class IceGame(GameBase):
+    """Mode de jeu 'glace' avec uniquement des plateformes de glace, sauf la première."""
     
     def __init__(self):
         # Appel du constructeur de la classe parente
-        super().__init__(title="Cloud Jump - Lava Mode")
+        super().__init__(title="Cloud Jump - Ice Mode")
         
         # Initialiser les objets spécifiques à ce mode
-        self.background = LavaBackground()
+        self.background = IceBackground()
         self.player = Player()
         
         # Générer les plateformes initiales
@@ -33,16 +33,16 @@ class LavaGame(GameBase):
         # Taille fixe de plateforme
         platform_width = 100  # Taille standard pour toutes les plateformes
         
-        # Créer la plateforme de sol initiale - la seule plateforme normale en mode lave
+        # Créer la plateforme de sol initiale - la seule plateforme normale en mode glace
         self.platforms.append(Platform(SCREEN_WIDTH//2 - platform_width//2, SCREEN_HEIGHT - 100, platform_width))
         
-        # Générer des plateformes aléatoires - toutes cassables
+        # Générer des plateformes aléatoires - toutes glissantes (ice)
         for i in range(12):
             x = random.randint(20, SCREEN_WIDTH - platform_width)
             y = SCREEN_HEIGHT - 200 - i * PLATFORM_SPACING
             
-            # En mode lave, toutes les autres plateformes sont cassables
-            self.platforms.append(BreakablePlatform(x, y, platform_width))
+            # En mode glace, toutes les autres plateformes sont des plateformes de glace
+            self.platforms.append(IcePlatform(x, y, platform_width))
     
     def update(self):
         """Mettre à jour tous les éléments du jeu pour une frame."""
@@ -73,9 +73,8 @@ class LavaGame(GameBase):
         for platform in self.platforms:
             platform.update(self.scroll_speed)
             
-        # Supprimer les plateformes cassées ou qui sont sorties de l'écran
-        self.platforms = [p for p in self.platforms if p.y < SCREEN_HEIGHT + 50 and 
-                         (not hasattr(p, 'should_remove') or not p.should_remove())]
+        # Supprimer les plateformes qui sont sorties de l'écran
+        self.platforms = [p for p in self.platforms if p.y < SCREEN_HEIGHT + 50]
         
         # Ajouter de nouvelles plateformes au fur et à mesure
         while len(self.platforms) < 13:
@@ -92,8 +91,8 @@ class LavaGame(GameBase):
             x = random.randint(20, SCREEN_WIDTH - platform_width)
             y = highest_y - current_spacing
             
-            # En mode lave, toutes les nouvelles plateformes sont cassables
-            platform = BreakablePlatform(x, y, platform_width)
+            # En mode glace, toutes les nouvelles plateformes sont des plateformes de glace
+            platform = IcePlatform(x, y, platform_width)
             self.platforms.append(platform)
     
     def draw(self):

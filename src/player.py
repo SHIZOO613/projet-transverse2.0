@@ -138,12 +138,13 @@ class Player:
             
         # Check for landing on platforms
         old_on_ground = self.on_ground
+        old_platform = self.current_platform
         self.on_ground = False
         self.current_platform = None
         
         for platform in platforms:
             # Méthode standard de détection de collision
-            if self.vel_y > 0:  # Seulement en chute
+            if self.vel_y > 0 or (old_on_ground and platform == old_platform):  # Chute ou déjà sur la plateforme
                 # Check if player's bottom is within platform bounds
                 if (self.y + self.size >= platform.y and 
                     self.y + self.size <= platform.y + PLATFORM_HEIGHT and
@@ -156,7 +157,7 @@ class Player:
                     self.current_platform = platform
                     
                     # Si on vient d'atterrir sur la plateforme, déclencher l'événement
-                    if not old_on_ground:
+                    if not old_on_ground or platform != old_platform:
                         platform.on_landing(self)
                     
                     break
@@ -181,6 +182,14 @@ class Player:
                     
                     break
                 
+        # Si le joueur charge un saut et qu'il est sur une plateforme mobile
+        # Assurer qu'il reste bien collé à la plateforme sans glisser
+        if self.charging and self.on_ground and self.current_platform and self.current_platform.platform_type == "moving":
+            # Assurer que le joueur reste collé à la plateforme pendant qu'il charge
+            self.y = self.current_platform.y - self.size
+            # Réinitialiser la vitesse verticale pour éviter des accumulations
+            self.vel_y = 0
+        
         # Charging jump
         if self.charging and self.on_ground:
             self.charge = min(self.charge + CHARGE_RATE, MAX_CHARGE)

@@ -92,18 +92,36 @@ class MovingPlatform(Platform):
         self.amplitude = random.randint(30, 60)  # Distance de déplacement
         self.speed = random.uniform(0.02, 0.04)  # Vitesse de déplacement
         self.time = random.uniform(0, 2 * math.pi)  # Phase aléatoire
+        self.prev_y = y  # Mémoriser la position précédente pour calculer le mouvement
         
         # Charger le sprite spécifique
         self.sprite = self.load_sprite("sliding_platform.png")
         
     def update(self, scroll_speed=0):
         """Mettre à jour la position avec mouvement vertical + défilement."""
+        # Mémoriser la position actuelle
+        self.prev_y = self.y
+        
         # Mettre à jour le mouvement vertical
         self.time += self.speed
         self.y = self.original_y + math.sin(self.time) * self.amplitude
         
         # Ajouter le défilement de l'écran
         self.original_y += scroll_speed
+    
+    def on_landing(self, player):
+        """Ajuster la position du joueur quand la plateforme se déplace."""
+        # Si la plateforme monte (position actuelle plus haute que précédente)
+        # on n'a rien à faire car le joueur reste naturellement sur la plateforme
+        # Mais si elle descend, on doit ajuster la vitesse du joueur
+        if self.y > self.prev_y:
+            # Calculer le déplacement vertical de la plateforme
+            delta_y = self.y - self.prev_y
+            # Ajuster la vitesse verticale du joueur pour suivre la plateforme
+            # Mais ne pas l'ajuster si le joueur est en train de charger un saut
+            if not player.charging:
+                player.vel_y = max(0, delta_y)
+        # Si la plateforme monte, la collision standard gère déjà le cas
 
 
 class BreakablePlatform(Platform):
