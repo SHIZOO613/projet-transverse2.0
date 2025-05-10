@@ -1,4 +1,4 @@
-# Cloud Jump - Jeu de Plateformes
+# Frog Jump - Jeu de Plateformes
 
 Un jeu de plateformes en 2D où le joueur contrôle une grenouille qui doit sauter de plateforme en plateforme pour monter le plus haut possible.
 
