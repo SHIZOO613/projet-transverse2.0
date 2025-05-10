@@ -105,20 +105,25 @@ class Player:
         
         # Sauvegarder la position précédente pour détecter les franchissements
         prev_y = self.y
+        prev_platform = self.current_platform
         
         # Apply gravity
         self.vel_y += GRAVITY
         
         # Limiter la vitesse maximale de chute pour améliorer les collisions
-        # tout en préservant la dynamique du jeu
         max_fall_speed = 15
         if self.vel_y > max_fall_speed:
             self.vel_y = max_fall_speed
         
         # Appliquer la friction lorsque le cube est au sol
-        # Utiliser la friction de la plateforme actuelle si elle existe
         if self.on_ground and self.current_platform:
-            self.vel_x *= self.current_platform.friction
+            # Si on est sur une plateforme mobile, ajuster la vitesse horizontale
+            if self.current_platform.platform_type == "moving":
+                # Conserver une partie de la vitesse horizontale pour un mouvement plus fluide
+                self.vel_x *= 0.95
+            else:
+                # Pour les autres plateformes, utiliser leur friction normale
+                self.vel_x *= self.current_platform.friction
             
             # Arrêter complètement le mouvement si la vitesse est très faible
             if abs(self.vel_x) < 0.1:
@@ -138,33 +143,48 @@ class Player:
             
         # Check for landing on platforms
         old_on_ground = self.on_ground
-        old_platform = self.current_platform
         self.on_ground = False
         self.current_platform = None
         
         for platform in platforms:
             # Méthode standard de détection de collision
-            if self.vel_y > 0 or (old_on_ground and platform == old_platform):  # Chute ou déjà sur la plateforme
+            if self.vel_y > 0 or (old_on_ground and platform == prev_platform):  # Chute ou déjà sur la plateforme
                 # Check if player's bottom is within platform bounds
                 if (self.y + self.size >= platform.y and 
                     self.y + self.size <= platform.y + PLATFORM_HEIGHT and
                     self.x + self.size > platform.x and 
                     self.x < platform.x + platform.width):
+                    
                     self.on_ground = True
                     self.jumping = False
-                    self.y = platform.y - self.size
-                    self.vel_y = 0
                     self.current_platform = platform
                     
+                    # Gestion spéciale pour les plateformes mobiles
+                    if platform.platform_type == "moving":
+                        # Calculer le delta de mouvement de la plateforme
+                        platform_delta_y = platform.y - platform.prev_y if hasattr(platform, 'prev_y') else 0
+                        
+                        # Si la plateforme monte, donner un petit boost au joueur
+                        if platform_delta_y < 0:
+                            self.vel_y = min(platform_delta_y * 1.2, 0)
+                        # Si la plateforme descend, suivre son mouvement
+                        elif platform_delta_y > 0:
+                            self.vel_y = platform_delta_y
+                        
+                        # Ajuster la position Y pour rester collé à la plateforme
+                        self.y = platform.y - self.size
+                    else:
+                        # Pour les plateformes normales
+                        self.y = platform.y - self.size
+                        self.vel_y = 0
+                    
                     # Si on vient d'atterrir sur la plateforme, déclencher l'événement
-                    if not old_on_ground or platform != old_platform:
+                    if not old_on_ground or platform != prev_platform:
                         platform.on_landing(self)
                     
                     break
-                    
+                
                 # Ajout: vérifier si on a traversé une plateforme entre deux frames
-                # C'est-à-dire si la position précédente était au-dessus de la plateforme
-                # et la position actuelle est en-dessous
                 elif (prev_y + self.size <= platform.y and 
                      self.y + self.size >= platform.y + PLATFORM_HEIGHT and
                      self.x + self.size > platform.x and 
@@ -181,14 +201,14 @@ class Player:
                         platform.on_landing(self)
                     
                     break
-                
+        
         # Si le joueur charge un saut et qu'il est sur une plateforme mobile
-        # Assurer qu'il reste bien collé à la plateforme sans glisser
         if self.charging and self.on_ground and self.current_platform and self.current_platform.platform_type == "moving":
             # Assurer que le joueur reste collé à la plateforme pendant qu'il charge
             self.y = self.current_platform.y - self.size
-            # Réinitialiser la vitesse verticale pour éviter des accumulations
-            self.vel_y = 0
+            # Ajuster la vitesse verticale pour suivre la plateforme
+            platform_delta_y = self.current_platform.y - (self.current_platform.prev_y if hasattr(self.current_platform, 'prev_y') else self.current_platform.y)
+            self.vel_y = platform_delta_y
         
         # Charging jump
         if self.charging and self.on_ground:

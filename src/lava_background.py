@@ -2,6 +2,8 @@ import pygame
 import os
 from config import SCREEN_WIDTH, SCREEN_HEIGHT, ASSETS_DIR, BG_ASSETS_DIR
 from background_manager import BackgroundBase
+import random
+import math
 
 class FireBall:
     """Classe pour les boules de feu dans les coins en utilisant le sprite IdleLoop-Sheet.png"""
@@ -75,26 +77,22 @@ class LavaBackground(BackgroundBase):
         
         # Charger l'image de fond de lave
         try:
-            # Utiliser spécifiquement le fichier background_lava_mode.jpg dans le dossier Lava_background
             bg_path = os.path.join(BG_ASSETS_DIR, "Lava_background", "background_lava_mode.jpg")
             print(f"Chargement du fond spécifique: {bg_path}")
             
-            # Utiliser la méthode de la classe de base pour charger l'image
             bg_image = self.load_image(bg_path)
             
             if bg_image:
-                # Utiliser la méthode de la classe de base pour redimensionner l'image
                 self.background = self.scale_background(bg_image)
             else:
                 raise FileNotFoundError(f"Fichier background_lava_mode.jpg introuvable dans {BG_ASSETS_DIR}/Lava_background")
                 
         except Exception as e:
             print(f"Erreur lors du chargement du fond: {e}")
-            # Utiliser la méthode de la classe de base pour créer un fond de secours
-            self.background = self.create_fallback_background((100, 0, 0))  # Rouge foncé pour indiquer un mode lave
+            self.background = self.create_fallback_background((100, 0, 0))
         
-        # Créer les 4 boules de feu dans les 4 coins
-        fireball_scale = 3.0  # Échelle plus grande pour le sprite IdleLoop
+        # Créer les 2 boules de feu dans les coins du bas
+        fireball_scale = 3.0
         
         # Charger la taille du sprite pour positionner correctement
         temp_fireball = FireBall(0, 0, fireball_scale)
@@ -102,18 +100,13 @@ class LavaBackground(BackgroundBase):
             fb_width = temp_fireball.frames[0].get_width()
             fb_height = temp_fireball.frames[0].get_height()
         else:
-            # Valeurs par défaut si le sprite ne charge pas
             fb_width = int(50 * fireball_scale)
             fb_height = int(50 * fireball_scale)
         
         self.fireballs = [
-            # Coin supérieur gauche - positionné exactement à (0,0)
-            FireBall(0, 0, fireball_scale),
-            # Coin supérieur droit - positionné pour que le bord droit soit aligné avec SCREEN_WIDTH
-            FireBall(SCREEN_WIDTH - fb_width, 0, fireball_scale),
-            # Coin inférieur gauche - positionné pour que le bord inférieur soit aligné avec SCREEN_HEIGHT
+            # Coin inférieur gauche
             FireBall(0, SCREEN_HEIGHT - fb_height, fireball_scale),
-            # Coin inférieur droit - positionné pour que les deux bords soient alignés
+            # Coin inférieur droit
             FireBall(SCREEN_WIDTH - fb_width, SCREEN_HEIGHT - fb_height, fireball_scale)
         ]
     
