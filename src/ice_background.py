@@ -68,7 +68,7 @@ class IceBackground(BackgroundBase):
         
         # Créer des particules de neige
         self.snow_particles = []
-        for _ in range(50):  # Nombre de particules
+        for _ in range(10000):  # Nombre de particules
             x = pygame.time.get_ticks() % SCREEN_WIDTH
             y = pygame.time.get_ticks() % SCREEN_HEIGHT
             scale = 0.5 + 1.5 * pygame.time.get_ticks() % 100 / 100  # Taille aléatoire entre 0.5 et 2.0
