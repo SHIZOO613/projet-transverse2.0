@@ -69,8 +69,43 @@ class FireBall:
         if self.frames:
             screen.blit(self.frames[self.frame], (self.x, self.y))
 
+class LavaAnimation:
+    def __init__(self, y, scale=1.0):
+        self.frames = []
+        self.frame = 0
+        self.animation_speed = 0.12
+        self.animation_timer = 0
+        self.y = y
+        self.scale = scale
+
+        # Charge les frames de l'animation
+        sprites_dir = os.path.join(BG_ASSETS_DIR, "Lava_background")
+        for i in range(5):  # 5 frames: lava_animation0.png à lava_animation4.png
+            path = os.path.join(sprites_dir, f"lava_animation{i}.png")
+            if os.path.exists(path):
+                img = pygame.image.load(path).convert_alpha()
+                height = int(img.get_height() * self.scale)
+                img = pygame.transform.scale(img, (SCREEN_WIDTH, height))
+                self.frames.append(img)
+        if not self.frames:
+            # Fallback
+            surf = pygame.Surface((SCREEN_WIDTH, 40))
+            surf.fill((255, 80, 0))
+            self.frames = [surf]
+
+    def update(self):
+        self.animation_timer += 1/60
+        if self.animation_timer >= self.animation_speed:
+            self.animation_timer = 0
+            self.frame = (self.frame + 1) % len(self.frames)
+
+    def draw(self, screen):
+        if self.frames:
+            img = self.frames[self.frame]
+            screen.blit(img, (0, self.y))
+
 class LavaBackground(BackgroundBase):
-    """Classe pour gérer le fond de lave avec des boules de feu dans les coins"""
+    """Classe pour gérer le fond de lave avec des boules de feu dans les coins et l'animation de lave en bas"""
     def __init__(self):
         # Initialiser la classe parente
         super().__init__()
@@ -109,17 +144,27 @@ class LavaBackground(BackgroundBase):
             # Coin inférieur droit
             FireBall(SCREEN_WIDTH - fb_width, SCREEN_HEIGHT - fb_height, fireball_scale)
         ]
+        
+        # Correction : placer l'animation de lave pile en bas
+        temp_lava_anim = LavaAnimation(0, scale=3.0)
+        if temp_lava_anim.frames:
+            lava_height = temp_lava_anim.frames[0].get_height()
+        else:
+            lava_height = 40
+        self.lava_anim = LavaAnimation(SCREEN_HEIGHT - lava_height, scale=3.0)
     
     def update(self):
-        """Mettre à jour les animations des boules de feu"""
+        """Mettre à jour les animations des boules de feu et de la lave"""
         for fireball in self.fireballs:
             fireball.update()
+        self.lava_anim.update()
     
     def draw(self, screen):
-        """Dessiner le fond et les boules de feu"""
+        """Dessiner le fond, la lave animée et les boules de feu"""
         # Dessiner le fond
         screen.blit(self.background, (self.bg_x, self.bg_y))
-        
+        # Dessiner l'animation de lave en bas
+        self.lava_anim.draw(screen)
         # Dessiner les boules de feu
         for fireball in self.fireballs:
             fireball.draw(screen)
