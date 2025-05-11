@@ -14,13 +14,15 @@ from game_platform import Platform, BreakablePlatform  # Import from our renamed
 class LavaGame(GameBase):
     """Mode de jeu 'lave' avec uniquement des plateformes cassables et un fond de lave."""
     
-    def __init__(self):
+    def __init__(self, player_skin_path):
         # Appel du constructeur de la classe parente
         super().__init__(title="Cloud Jump - Lava Mode")
         
+        self.player_skin_path = player_skin_path # Store the skin path
+
         # Initialiser les objets spécifiques à ce mode
         self.background = LavaBackground()
-        self.player = Player()
+        self.player = Player(skin_path=self.player_skin_path) # Pass skin path to Player
         
         # Générer les plateformes initiales
         self.generate_platforms()
@@ -139,7 +141,7 @@ class LavaGame(GameBase):
     
     def reset(self):
         """Reset the game state to start a new game."""
-        self.player = Player()
+        self.player = Player(skin_path=self.player_skin_path) # Re-initialize player with the stored skin path
         self.score = 0
         self.game_over = False
         self.scroll_speed = 0

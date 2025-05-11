@@ -40,23 +40,44 @@ def main():
         while running:
             # Afficher le menu principal et récupérer le mode sélectionné
             menu = MainMenu()
-            selected_mode = menu.run()
+            menu_outcome = menu.run() # Attendre un dictionnaire
+
+            if not menu_outcome: # Si l'utilisateur ferme le menu sans choisir
+                running = False
+                continue
+
+            game_mode = menu_outcome.get("mode")
+            selected_skin = menu_outcome.get("skin")
+
+            if not selected_skin:
+                print("Error: No skin path received from menu. Exiting.")
+                # Fallback to a default skin path if necessary or handle error
+                # For now, let's assume a default if None. This should ideally be handled more robustly.
+                # default_skin_path = os.path.join("assets", "sprites", "frog", "Idle frog", "frog_idle0.png") # Example default
+                # selected_skin = default_skin_path 
+                # Better to ensure menu always returns a valid skin or None and game handles None if player can't load without it
+                running = False # Or handle as an error state
+                continue
             
             # Démarrer le mode de jeu sélectionné
-            if selected_mode == "NORMAL":
+            game_instance = None
+            if game_mode == "NORMAL":
                 # Mode de jeu normal avec différents types de plateformes
-                game = Game()
-                result = game.run()
-            elif selected_mode == "LAVA":
+                game_instance = Game(player_skin_path=selected_skin) # Passer le skin
+            elif game_mode == "LAVA":
                 # Mode de jeu lave avec plateformes cassables et fond de lave
-                game = LavaGame()
-                result = game.run()
-            elif selected_mode == "ICE":
+                game_instance = LavaGame(player_skin_path=selected_skin) # Passer le skin
+            elif game_mode == "ICE":
                 # Mode de jeu glace avec plateformes glissantes et fond de glace
-                game = IceGame()
-                result = game.run()
+                game_instance = IceGame(player_skin_path=selected_skin) # Passer le skin
             else:
                 # Quitter si aucun mode n'est sélectionné ou si l'utilisateur a quitté
+                running = False
+                continue
+            
+            if game_instance:
+                result = game_instance.run()
+            else: # Should not happen if game_mode is one of the above
                 running = False
                 continue
                 

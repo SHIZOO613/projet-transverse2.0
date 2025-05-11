@@ -10,7 +10,7 @@ from config import (
 class Player:
     """Player character (frog) with jumping mechanics."""
     
-    def __init__(self):
+    def __init__(self, skin_path=None):
         self.size = PLAYER_SIZE
         self.x = SCREEN_WIDTH // 2 - self.size // 2
         self.y = SCREEN_HEIGHT - 150
@@ -33,6 +33,9 @@ class Player:
         self.current_frame = 0
         self.idle_sequence = [0, 1, 2, 3, 2, 1]  # Séquence d'animation idle
         
+        # Store the base path for the skin if provided
+        self.skin_base_path = skin_path 
+
         # Chargement des sprites
         self.sprites = {
             'idle': [],
@@ -42,24 +45,128 @@ class Player:
         }
         
         # Chargement des sprites Idle
-        for i in range(4):
-            sprite_path = os.path.join(ASSETS_DIR, "sprites", "frog", "Idle frog", f"frog_idle{i}.png")
-            self.sprites['idle'].append(self.load_sprite(sprite_path))
+        # If a specific skin_path for an idle animation is provided, try to use it and its sequence.
+        # Otherwise, fall back to default idle animation.
+        if self.skin_base_path and os.path.exists(self.skin_base_path):
+            # Assuming skin_base_path is the path to the first idle frame (e.g., .../frog_idle0.png)
+            # We need a way to get other frames if it's an animation.
+            # For simplicity, let's assume the provided skin_path is the *only* idle frame for now,
+            # or that it implies a naming convention we can derive.
+            
+            # Attempt to load a sequence if the path suggests it (e.g., ends with 0.png)
+            base_name, ext = os.path.splitext(os.path.basename(self.skin_base_path))
+            dir_name = os.path.dirname(self.skin_base_path)
+            
+            loaded_idle_sprites = 0
+            if base_name.endswith('0'): # Check if it looks like a sequence start (e.g., frog_idle0)
+                name_prefix = base_name[:-1] # e.g., frog_idle
+                for i in range(4): # Try to load 4 frames like the default
+                    frame_path = os.path.join(dir_name, f"{name_prefix}{i}{ext}")
+                    if os.path.exists(frame_path):
+                        self.sprites['idle'].append(self.load_sprite(frame_path))
+                        loaded_idle_sprites += 1
+                    else:
+                        # If a frame is missing in the sequence, stop for this skin
+                        # or we could just load what's available.
+                        # For now, if one is missing, we might have an incomplete animation.
+                        break 
+            
+            if not loaded_idle_sprites: # If sequence loading failed or not applicable
+                # Load just the single provided skin_path as the only idle sprite
+                self.sprites['idle'].append(self.load_sprite(self.skin_base_path))
+                self.idle_sequence = [0] # Only one frame in the sequence
+            elif loaded_idle_sprites < 4 and loaded_idle_sprites > 0:
+                # If we loaded some but not all 4, adjust idle_sequence
+                self.idle_sequence = list(range(loaded_idle_sprites)) 
+                # Could make a more complex sequence like [0,1,..,n-1, n-2, ..., 1] if more than 1 frame
+                if loaded_idle_sprites > 1:
+                    self.idle_sequence += list(range(loaded_idle_sprites - 2, 0, -1))
+                else: # single frame
+                    self.idle_sequence = [0]
+
+            if not self.sprites['idle'] : # Ultimate fallback if all loading failed
+                print(f"Warning: Could not load any idle sprites for skin {self.skin_base_path}. Falling back to default idle.")
+                self.load_default_idle_sprites()
+
+        else:
+            # Fallback to default idle animation if no skin_path or path doesn't exist
+            if skin_path: # only print warning if a path was given but not found
+                print(f"Warning: Skin path {skin_path} not found. Loading default player idle sprites.")
+            self.load_default_idle_sprites()
             
         # Chargement des sprites d'action
-        action_sprites = {
+        action_sprite_source_files = {
             'charge': "frog_charge.png",
             'jump': "frog_jump.png",
             'sliding': "frog_sliding.png"
         }
         
-        for action, filename in action_sprites.items():
-            sprite_path = os.path.join(ASSETS_DIR, "sprites", "frog", "Frog actions", filename)
-            self.sprites[action] = self.load_sprite(sprite_path)
+        actions_folder_path = os.path.join(ASSETS_DIR, "sprites", "frog", "Frog actions") # Default path
+
+        # Check if a specific skin path is provided and try to use its action sprites
+        if self.skin_base_path and "Winter_frog_skin" in self.skin_base_path:
+            # Try to determine the actions folder for the Winter skin
+            winter_skin_root_folder = os.path.dirname(os.path.dirname(self.skin_base_path)) 
+            potential_winter_actions_folder = os.path.join(winter_skin_root_folder, "winter_frogactions")
+            
+            if os.path.isdir(potential_winter_actions_folder):
+                actions_folder_path = potential_winter_actions_folder
+                action_sprite_source_files['charge'] = "frog_charge_winter.png"
+                action_sprite_source_files['jump'] = "frog_jump_winter.png"
+                action_sprite_source_files['sliding'] = "frog_sliding_winter.png"
+                print(f"Log: Using Winter skin action sprites from {actions_folder_path}")
+            else:
+                print(f"Warning: Winter skin actions folder not found at {potential_winter_actions_folder}. Using default action sprites.")
+        
+        elif self.skin_base_path and "Yellow_frog_skin" in self.skin_base_path:
+            # Try to determine the actions folder for the Yellow skin
+            yellow_skin_root_folder = os.path.dirname(os.path.dirname(self.skin_base_path)) # Path: .../skins/Yellow_frog_skin/
+            potential_yellow_actions_folder = os.path.join(yellow_skin_root_folder, "winter_frogactions") # The folder is named winter_frogactions
+            
+            if os.path.isdir(potential_yellow_actions_folder):
+                actions_folder_path = potential_yellow_actions_folder
+                action_sprite_source_files['charge'] = "frog_charge_hiver_jaune_clair.png"
+                action_sprite_source_files['jump'] = "frog_jump_hiver_jaune_clair.png"
+                action_sprite_source_files['sliding'] = "frog_sliding_hiver_jaune_clair.png"
+                print(f"Log: Using Yellow skin action sprites from {actions_folder_path}")
+            else:
+                print(f"Warning: Yellow skin actions folder not found at {potential_yellow_actions_folder}. Using default action sprites.")
+        else:
+            print(f"Log: Using default action sprites from {actions_folder_path}")
+
+        for action_key, filename in action_sprite_source_files.items():
+            sprite_path = os.path.join(actions_folder_path, filename)
+            if os.path.exists(sprite_path):
+                self.sprites[action_key] = self.load_sprite(sprite_path)
+            else:
+                print(f"Warning: Action sprite not found: {sprite_path}. Player.{action_key} will be None.")
+                # Fallback: if an action sprite is missing, Player.draw will use the fallback color for that action
+                self.sprites[action_key] = None # Explicitly set to None
             
         # État d'animation actuel
         self.current_animation = 'idle'
         
+    def load_default_idle_sprites(self):
+        """Loads the default idle animation sequence."""
+        self.sprites['idle'] = [] # Clear any previous attempts
+        self.idle_sequence = [0, 1, 2, 3, 2, 1] # Reset to default sequence
+        default_idle_folder = os.path.join(ASSETS_DIR, "sprites", "frog", "Idle frog")
+        for i in range(4):
+            sprite_path = os.path.join(default_idle_folder, f"frog_idle{i}.png")
+            loaded_sprite = self.load_sprite(sprite_path)
+            if loaded_sprite: # Check if sprite loaded successfully
+                 self.sprites['idle'].append(loaded_sprite)
+            else:
+                print(f"Error: Failed to load default idle sprite: {sprite_path}")
+                # Handle error, e.g. by adding a placeholder or stopping
+        if not self.sprites['idle']:
+            print("CRITICAL: Could not load ANY default idle sprites. Player will be invisible or use fallback color.")
+            # Add a colored square as an absolute fallback for idle if all fails
+            fallback_sprite = pygame.Surface((self.size, self.size))
+            fallback_sprite.fill(self.color)
+            self.sprites['idle'].append(fallback_sprite)
+            self.idle_sequence = [0]
+
     def load_sprite(self, path):
         """Charger un sprite et le redimensionner à la taille du joueur en préservant le ratio d'aspect."""
         try:
@@ -307,36 +414,64 @@ class Player:
             
     def draw(self, screen):
         """Draw the player and related UI elements (charge bar, trajectory)."""
-        # Déterminer le sprite à utiliser
-        sprite = None
+        # Déterminer le sprite de base à utiliser
+        base_sprite = None
         if self.current_animation == 'idle':
-            frame_index = self.idle_sequence[self.current_frame]
-            sprite = self.sprites['idle'][frame_index]
-        else:
-            sprite = self.sprites[self.current_animation]
+            if self.sprites['idle']: # Check if idle sprites are loaded
+                frame_index = self.idle_sequence[self.current_frame % len(self.idle_sequence)] # Ensure index is valid
+                if frame_index < len(self.sprites['idle']): # Double check index validity
+                    base_sprite = self.sprites['idle'][frame_index]
+                else:
+                    print(f"Warning: Invalid frame_index {frame_index} for idle animation.")
+                    # Fallback to first idle frame or default color if very broken
+                    if self.sprites['idle']:
+                         base_sprite = self.sprites['idle'][0]
+            if not base_sprite: # If still no base_sprite, use fallback color
+                 # This case should be rare if load_default_idle_sprites has its own fallback
+                pygame.draw.rect(screen, self.color, (self.x, self.y, self.size, self.size))
+                # Draw charge bar and trajectory even with fallback color
+                if self.charging and self.on_ground:
+                    pygame.draw.rect(screen, WHITE, (self.x, self.y - 15, self.size, 10))
+                    charge_width = int(self.size * (self.charge / MAX_CHARGE))
+                    pygame.draw.rect(screen, YELLOW, (self.x, self.y - 15, charge_width, 10))
+                    points = self.predict_trajectory()
+                    if len(points) > 1:
+                        pygame.draw.lines(screen, RED, False, points, 1)
+                return # Exit early if using fallback color
+
+        else: # For 'charge', 'jump', 'sliding'
+            base_sprite = self.sprites[self.current_animation]
         
-        # Dessiner le sprite
-        if sprite:
-            # Déterminer si la grenouille doit être retournée horizontalement
-            facing_left = False
-            
-            if self.charging:
-                # Pendant la charge, orienter la grenouille vers la position de la souris
-                mouse_x, _ = pygame.mouse.get_pos()
-                facing_left = mouse_x < self.x + self.size // 2
-            else:
-                # Sinon, orienter selon la vitesse horizontale
-                facing_left = self.vel_x < 0
-            
-            # Inverser la logique pour corriger l'orientation
-            # La grenouille doit regarder dans la direction opposée à celle déterminée précédemment
-            if not facing_left:
-                sprite = pygame.transform.flip(sprite, True, False)
-                
-            screen.blit(sprite, (self.x, self.y))
-        else:
-            # Fallback au rectangle coloré si le sprite n'est pas disponible
+        # Si base_sprite n'a pas pu être déterminé (même pour les actions), utiliser le fallback
+        if not base_sprite:
             pygame.draw.rect(screen, self.color, (self.x, self.y, self.size, self.size))
+            # Draw charge bar and trajectory even with fallback color
+            if self.charging and self.on_ground:
+                pygame.draw.rect(screen, WHITE, (self.x, self.y - 15, self.size, 10))
+                charge_width = int(self.size * (self.charge / MAX_CHARGE))
+                pygame.draw.rect(screen, YELLOW, (self.x, self.y - 15, charge_width, 10))
+                points = self.predict_trajectory()
+                if len(points) > 1:
+                    pygame.draw.lines(screen, RED, False, points, 1)
+            return # Exit early
+
+        # Déterminer si la grenouille doit être retournée horizontalement
+        should_flip = False
+        if self.charging:
+            mouse_x, _ = pygame.mouse.get_pos()
+            if mouse_x < self.x + self.size // 2: # Souris à gauche du joueur
+                should_flip = True
+        elif self.vel_x != 0: # Si le joueur bouge horizontalement
+            if self.vel_x < 0: # Bouge vers la gauche
+                should_flip = True
+        # Si vel_x est 0 et pas en charge, on garde la dernière orientation (pas de flip ici, sprite est déjà orienté)
+
+        # Appliquer le flip si nécessaire
+        sprite_to_draw = base_sprite
+        if should_flip:
+            sprite_to_draw = pygame.transform.flip(base_sprite, True, False)
+            
+        screen.blit(sprite_to_draw, (self.x, self.y))
         
         # Draw charge meter if charging
         if self.charging and self.on_ground:

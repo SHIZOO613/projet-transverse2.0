@@ -16,13 +16,15 @@ from coin import Coin
 class Game(GameBase):
     """Mode de jeu normal avec plateformes variées et fond de nuages."""
     
-    def __init__(self):
+    def __init__(self, player_skin_path):
         # Appel du constructeur de la classe parente
         super().__init__(title="Cloud Jump")
         
+        self.player_skin_path = player_skin_path # Store the skin path
+
         # Initialiser les objets spécifiques à ce mode
         self.background = Background()
-        self.player = Player()
+        self.player = Player(skin_path=self.player_skin_path) # Pass skin path to Player
         
         # Initialiser le système de pièces
         self.coins = []
@@ -233,7 +235,8 @@ class Game(GameBase):
     
     def reset(self):
         """Reset the game state to start a new game."""
-        self.player = Player()
+        # Re-initialize player with the stored skin path
+        self.player = Player(skin_path=self.player_skin_path) 
         self.score = 0
         self.coin_count = 0
         self.game_over = False
