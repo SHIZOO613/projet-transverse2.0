@@ -323,7 +323,7 @@ class MainMenu:
             self.lava_button.draw(self.screen)
             self.ice_button.draw(self.screen)
 
-            # Dessiner le texte "SKIN CHOICE"
+            # Disp"SKIN CHOICE"
             if hasattr(self, 'skin_choice_text_surface'): # Check if it's initialized
                 self.screen.blit(self.skin_choice_text_surface, self.skin_choice_text_rect)
 
