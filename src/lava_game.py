@@ -3,7 +3,8 @@ import random
 
 from config import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BLACK, WHITE, YELLOW, RED,
-    PLATFORM_SPACING
+    PLATFORM_SPACING, MIN_PLATFORM_WIDTH, MAX_PLATFORM_WIDTH,
+    add_coins, update_high_score
 )
 from utils import create_pixel_text
 from game_base import GameBase
@@ -157,6 +158,8 @@ class LavaGame(GameBase):
                 if event.key == pygame.K_ESCAPE:
                     return "QUIT"
                 elif event.key == pygame.K_SPACE and self.game_over:
+                    # Update high score before returning to menu
+                    update_high_score("lava", self.score)
                     return "MENU"  # Retourner au menu principal
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1 and not self.game_over:  # Left mouse button

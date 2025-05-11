@@ -3,7 +3,7 @@ import os
 import sys
 from utils import create_pixel_text
 from background import Background
-from config import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, ASSETS_DIR, WHITE, YELLOW, get_total_coins, BLACK
+from config import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, ASSETS_DIR, WHITE, YELLOW, get_total_coins, BLACK, get_high_score, ORANGE
 
 class Button:
     def __init__(self, x, y, width, height):
@@ -304,10 +304,20 @@ class MainMenu:
             
             self.screen.blit(self.logo, self.logo_rect)
             
+            # Display total coins
             total_coins = get_total_coins()
             coin_text = create_pixel_text(f"Total Coins: {total_coins}", self.font, YELLOW)
             coin_rect = coin_text.get_rect(centerx=SCREEN_WIDTH//2, top=self.logo_rect.bottom + 10)
             self.screen.blit(coin_text, coin_rect)
+            
+            # Display high scores
+            high_scores_y = coin_rect.bottom + 5  # Reduced from 10 to 5
+            for mode, name in [("normal", "Normal Mode"), ("lava", "Lava Mode"), ("ice", "Ice Mode")]:
+                high_score = get_high_score(mode)
+                score_text = create_pixel_text(f"{name} High Score: {high_score}", self.font, ORANGE)
+                score_rect = score_text.get_rect(centerx=SCREEN_WIDTH//2, top=high_scores_y)
+                self.screen.blit(score_text, score_rect)
+                high_scores_y = score_rect.bottom + 2  # Reduced from 5 to 2
             
             self.start_button.draw(self.screen)
             self.lava_button.draw(self.screen)

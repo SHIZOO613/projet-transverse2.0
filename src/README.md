@@ -1,62 +1,65 @@
-# Frog Jump - Jeu de Plateformes
+# Frog Jump - Platform Game
 
-Un jeu de plateformes en 2D où le joueur contrôle une grenouille qui doit sauter de plateforme en plateforme pour monter le plus haut possible.
+A 2D platform game where the player controls a frog that must jump from platform to platform to climb as high as possible.
 
-## Comment jouer
+## How to Play
 
-1. Lancez le jeu en exécutant:
+1. Launch the game by running:
    ```
    python game.py
    ```
 
-2. Dans le menu principal, vous pouvez choisir entre deux modes:
-   - **Mode Normal**: Plateformes variées (normales, mouvantes, glacées, cassables)
-   - **Mode Lave**: Uniquement des plateformes cassables avec un fond de lave et des boules de feu
+2. In the main menu, you can choose between three modes:
+   - **Normal Mode**: Various platforms (normal, moving, icy, breakable)
+   - **Lava Mode**: Only breakable platforms with a lava background and fireballs
+   - **Ice Mode**: Slippery ice platforms that make movement more challenging
 
-3. Commandes:
-   - Cliquez et maintenez le bouton gauche de la souris pour charger un saut
-   - Relâchez pour sauter dans la direction où se trouve le curseur
-   - Appuyez sur Espace pour revenir au menu après un Game Over
-   - Appuyez sur Échap pour quitter
+3. Controls:
+   - Click and hold the left mouse button to charge a jump
+   - Release to jump in the direction of the cursor
+   - Press Space to return to the menu after Game Over
+   - Press Escape to quit
 
-## Structure du projet
+## Project Structure
 
-Le projet est organisé selon une architecture orientée objet avec les fichiers suivants:
+The project is organized using an object-oriented architecture with the following files:
 
 ```
 src/
-├── assets/               # Ressources du jeu (sprites, images)
-├── game.py               # Point d'entrée principal du jeu
-├── game_base.py          # Classe de base pour les modes de jeu
-├── game_logic.py         # Implémentation du mode de jeu normal
-├── lava_game.py          # Implémentation du mode de jeu lave
-├── main_menu.py          # Menu principal
-├── background_manager.py # Classes de base pour gérer les fonds
-├── background.py         # Gestion du fond avec parallaxe
-├── lava_background.py    # Gestion du fond de lave
-├── platform.py           # Classes pour les différents types de plateformes
-├── player.py             # Classe du joueur (grenouille)
-├── config.py             # Configuration et constantes du jeu
-├── utils.py              # Fonctions utilitaires
+├── assets/               # Game resources (sprites, images)
+├── game.py               # Main game entry point
+├── game_base.py          # Base class for game modes
+├── game_logic.py         # Normal game mode implementation
+├── lava_game.py          # Lava game mode implementation
+├── ice_game.py           # Ice game mode implementation
+├── main_menu.py          # Main menu
+├── background_manager.py # Base classes for background management
+├── background.py         # Parallax background management
+├── lava_background.py    # Lava background management
+├── ice_background.py     # Ice background management
+├── platform.py           # Classes for different platform types
+├── player.py             # Player class (frog)
+├── config.py             # Game configuration and constants
+├── utils.py              # Utility functions
 └── __init__.py
 ```
 
-## Dépendances
+## Dependencies
 
-Le jeu utilise les bibliothèques Python suivantes:
-- **pygame**: Pour le rendu graphique et la gestion des entrées
-- **PIL** (Pillow): Pour certaines opérations de traitement d'image
+The game uses the following Python libraries:
+- **pygame**: For graphics rendering and input handling
+- **PIL** (Pillow): For some image processing operations
 
-Pour installer les dépendances:
+To install the dependencies:
 ```
 pip install pygame pillow
 ```
 
-## Licence
+## License
 
-Ce projet est distribué sous licence libre.
+This project is distributed under a free license.
 
-## Crédits
+## Credits
 
-- Sprites et graphismes: Ressources personnalisées
-- Développement: Projet original 
+- Sprites and graphics: Custom resources
+- Development: Original project 

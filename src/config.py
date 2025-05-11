@@ -16,6 +16,7 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 100, 255)
 YELLOW = (255, 255, 0)
+ORANGE = (255, 165, 0)
 
 # Physics settings
 GRAVITY = 0.5
@@ -45,12 +46,30 @@ BG_ASSETS_DIR = os.path.join(ASSETS_DIR, "backgrounds")
 # Gestion du nombre total de pièces
 TOTAL_COINS = 0
 
+# High scores for each game mode
+HIGH_SCORES = {
+    "normal": 0,
+    "lava": 0,
+    "ice": 0
+}
+
 def add_coins(count):
     """Ajouter des pièces au compteur total"""
     global TOTAL_COINS
     TOTAL_COINS += count
 
 def get_total_coins():
-    """Récupérer le nombre total de pièces collectées"""
-    global TOTAL_COINS
-    return TOTAL_COINS 
+    """Obtenir le nombre total de pièces"""
+    return TOTAL_COINS
+
+def update_high_score(mode, score):
+    """Update the high score for a specific game mode if the new score is higher"""
+    global HIGH_SCORES
+    if score > HIGH_SCORES[mode]:
+        HIGH_SCORES[mode] = score
+        return True
+    return False
+
+def get_high_score(mode):
+    """Get the high score for a specific game mode"""
+    return HIGH_SCORES[mode] 

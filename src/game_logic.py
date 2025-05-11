@@ -4,7 +4,7 @@ import random
 from config import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BLACK, WHITE, YELLOW, RED,
     MIN_PLATFORM_WIDTH, MAX_PLATFORM_WIDTH, PLATFORM_SPACING,
-    add_coins
+    add_coins, update_high_score
 )
 from utils import create_pixel_text
 from game_base import GameBase
@@ -254,6 +254,8 @@ class Game(GameBase):
                 if event.key == pygame.K_ESCAPE:
                     return "QUIT"
                 elif event.key == pygame.K_SPACE and self.game_over:
+                    # Update high score before returning to menu
+                    update_high_score("normal", self.score)
                     # Ajouter les pièces collectées au compteur total
                     add_coins(self.coin_count)
                     return "MENU"  # Retourner au menu principal
