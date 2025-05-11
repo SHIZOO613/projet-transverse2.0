@@ -10,7 +10,7 @@ from utils import create_pixel_text
 from game_base import GameBase
 from background import Background
 from player import Player
-from platform import Platform, MovingPlatform, BreakablePlatform, IcePlatform
+from game_platform import Platform, MovingPlatform, BreakablePlatform, IcePlatform  # Import from our renamed game_platform classes
 from coin import Coin
 
 class Game(GameBase):

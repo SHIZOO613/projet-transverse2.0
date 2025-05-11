@@ -9,7 +9,7 @@ from utils import create_pixel_text
 from game_base import GameBase
 from ice_background import IceBackground
 from player import Player
-from platform import Platform, IcePlatform
+from game_platform import Platform, IcePlatform
 
 class IceGame(GameBase):
     """Mode de jeu 'glace' avec uniquement des plateformes de glace, sauf la première."""

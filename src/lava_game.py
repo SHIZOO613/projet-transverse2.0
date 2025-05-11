@@ -9,7 +9,7 @@ from utils import create_pixel_text
 from game_base import GameBase
 from lava_background import LavaBackground
 from player import Player
-from platform import Platform, BreakablePlatform
+from game_platform import Platform, BreakablePlatform  # Import from our renamed game_platform classes
 
 class LavaGame(GameBase):
     """Mode de jeu 'lave' avec uniquement des plateformes cassables et un fond de lave."""

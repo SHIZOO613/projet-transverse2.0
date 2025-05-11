@@ -1,5 +1,5 @@
 from ice_background import IceBackground
-from platform import IcePlatform, Platform
+from game_platform import IcePlatform, Platform
 
 class IceGame(GameBase):
     """Mode de jeu avec uniquement des plateformes de glace, sauf la première."""
