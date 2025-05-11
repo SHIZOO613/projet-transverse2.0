@@ -73,7 +73,7 @@ class LavaAnimation:
     def __init__(self, y, scale=1.0):
         self.frames = []
         self.frame = 0
-        self.animation_speed = 0.3  # Même vitesse que les flammes
+        self.animation_speed = 0.1  # Même vitesse que les flammes
         self.animation_timer = 0
         self.y = y
         self.scale = scale
