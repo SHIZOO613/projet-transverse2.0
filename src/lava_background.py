@@ -73,7 +73,7 @@ class LavaAnimation:
     def __init__(self, y, scale=1.0):
         self.frames = []
         self.frame = 0
-        self.animation_speed = 0.12
+        self.animation_speed = 0.3  # Même vitesse que les flammes
         self.animation_timer = 0
         self.y = y
         self.scale = scale
@@ -146,12 +146,12 @@ class LavaBackground(BackgroundBase):
         ]
         
         # Correction : placer l'animation de lave pile en bas
-        temp_lava_anim = LavaAnimation(0, scale=3.0)
+        temp_lava_anim = LavaAnimation(0, scale=1.0)  # Échelle normale pour calculer la hauteur
         if temp_lava_anim.frames:
             lava_height = temp_lava_anim.frames[0].get_height()
         else:
             lava_height = 40
-        self.lava_anim = LavaAnimation(SCREEN_HEIGHT - lava_height, scale=3.0)
+        self.lava_anim = LavaAnimation(SCREEN_HEIGHT - lava_height, scale=1.0)  # Plus de décalage, position exacte en bas
     
     def update(self):
         """Mettre à jour les animations des boules de feu et de la lave"""
