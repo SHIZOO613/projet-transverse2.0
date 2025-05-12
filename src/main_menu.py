@@ -3,7 +3,7 @@ import os
 import sys
 from utils import create_pixel_text
 from background import Background
-from config import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, ASSETS_DIR, WHITE, YELLOW, get_total_coins, BLACK, get_high_score, ORANGE
+from config import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, ASSETS_DIR, WHITE, YELLOW, get_total_coins, BLACK, get_high_score, ORANGE, is_skin_unlocked, unlock_skin, spend_coins, add_coins
 
 class Button:
     def __init__(self, x, y, width, height):
@@ -73,8 +73,10 @@ class Button:
         self.is_pressed = False
 
 class SkinButton:
-    def __init__(self, x, y, width, height, image_path, screen_width_for_aspect):
+    def __init__(self, x, y, width, height, image_path, screen_width_for_aspect, is_locked=False, price=0):
         self.image_path = image_path
+        self.is_locked = is_locked
+        self.price = price
         
         # Load character skin image
         try:
@@ -99,6 +101,21 @@ class SkinButton:
             # Fallback to simple rectangles if cadre images fail to load
             self.normal_cadre = None
             self.pushed_cadre = None
+            
+        # Load lock sprite if this skin is locked
+        if self.is_locked:
+            lock_path = os.path.join(ASSETS_DIR, "Main menu", "Buttons", "lock_sprites.png")
+            try:
+                self.lock_sprite = pygame.image.load(lock_path)
+            except pygame.error as e:
+                print(f"Warning: Could not load lock sprite: {e}")
+                # Create a basic lock placeholder
+                self.lock_sprite = pygame.Surface((30, 30))
+                self.lock_sprite.fill((100, 100, 100))
+                pygame.draw.rect(self.lock_sprite, BLACK, self.lock_sprite.get_rect(), 2)
+                text = create_pixel_text("🔒", pygame.font.Font(None, 20), BLACK)
+                text_rect = text.get_rect(center=self.lock_sprite.get_rect().center)
+                self.lock_sprite.blit(text, text_rect)
 
         # Store original dimensions for skin sizing
         self.original_width = width
@@ -173,7 +190,51 @@ class SkinButton:
         self.dot_color = (0, 255, 0)  # Bright green
         # Position the dot centered below the button
         self.dot_pos = (self.x + self.width // 2, self.y + self.height + self.dot_radius + 2)
-
+        
+        # Scale lock sprite if the skin is locked
+        if self.is_locked and hasattr(self, 'lock_sprite'):
+            # Scale lock to appropriate size (20% of the cadre width - even smaller than before)
+            lock_scale = 0.20  # Reduced from 0.25 to 0.20
+            lock_width = int(self.width * lock_scale)
+            lock_height = int(lock_width * (self.lock_sprite.get_height() / self.lock_sprite.get_width()))
+            self.lock_sprite = pygame.transform.scale(self.lock_sprite, (lock_width, lock_height))
+            
+            # Load the coins image instead of creating text
+            coins_display_path = os.path.join(ASSETS_DIR, "Main menu", "Buttons", "20coin_display.png")
+            try:
+                self.coins_image = pygame.image.load(coins_display_path)
+                
+                # Scale up the coin image to make it bigger (2x original size)
+                coin_scale = 2.0  # Increased from 1.5 to 2.0
+                coin_width = int(self.coins_image.get_width() * coin_scale)
+                coin_height = int(self.coins_image.get_height() * coin_scale)
+                self.coins_image = pygame.transform.scale(self.coins_image, (coin_width, coin_height))
+                
+                # Position it to overlap with the bottom part of the cadre
+                self.coins_image_rect = self.coins_image.get_rect(
+                    centerx=self.x + self.width // 2,
+                    bottom=self.y + self.height - 5  # Position it to overlap with the bottom part of the cadre
+                )
+            except pygame.error as e:
+                print(f"Warning: Could not load coins display image: {e}")
+                # Fallback to text if image can't be loaded
+                pixel_font_size = 16
+                self.price_font = pygame.font.Font(None, pixel_font_size)
+                self.price_text = create_pixel_text(f"{self.price} COINS", self.price_font, YELLOW)
+                self.price_shadow = create_pixel_text(f"{self.price} COINS", self.price_font, BLACK)
+                self.price_shadow_rect = self.price_shadow.get_rect(
+                    centerx=self.x + self.width // 2 + 1,
+                    top=self.y + self.height + 15 + 1
+                )
+                self.price_text_rect = self.price_text.get_rect(
+                    centerx=self.x + self.width // 2,
+                    top=self.y + self.height + 15
+                )
+    
+    def unlock(self):
+        """Unlock the skin"""
+        self.is_locked = False
+        
     def draw(self, screen):
         # First draw the appropriate cadre
         if self.is_selected:
@@ -202,6 +263,24 @@ class SkinButton:
         
         # Draw the character image precisely centered on the cadre
         screen.blit(self.image, (char_x, char_y))
+        
+        # If skin is locked, draw lock overlay and price
+        if self.is_locked and hasattr(self, 'lock_sprite'):
+            # Draw lock sprite in the center of the cadre
+            lock_x = self.x + (self.width - self.lock_sprite.get_width()) // 2
+            lock_y = self.y + (self.height - self.lock_sprite.get_height()) // 2
+            screen.blit(self.lock_sprite, (lock_x, lock_y))
+            
+            # Check if we have the coins image, otherwise fallback to text
+            if hasattr(self, 'coins_image'):
+                # Draw the coins image
+                screen.blit(self.coins_image, self.coins_image_rect)
+            else:
+                # Fallback to text if image wasn't loaded
+                # Draw price text shadow first (for depth effect)
+                screen.blit(self.price_shadow, self.price_shadow_rect)
+                # Draw price text on top
+                screen.blit(self.price_text, self.price_text_rect)
 
     def check_press(self, pos):
         if self.rect.collidepoint(pos):
@@ -315,15 +394,38 @@ class MainMenu:
             os.path.join(ASSETS_DIR, "sprites", "frog", "skins", "Yellow_frog_skin", "idle_winterfrog", "frog_idle0_hiver_jauen_clair.png")
         ]
         
+        # Define which skins are locked (by default) and their prices
+        self.skin_locked_status = {
+            self.skin_image_paths[0]: True,  # Winter frog is locked
+            self.skin_image_paths[1]: False, # Default frog is always unlocked
+            self.skin_image_paths[2]: True   # Yellow winter frog is locked
+        }
+        
+        self.skin_prices = {
+            self.skin_image_paths[0]: 20, # Winter frog costs 20 coins
+            self.skin_image_paths[1]: 0,  # Default frog is free
+            self.skin_image_paths[2]: 20  # Yellow winter frog costs 20 coins
+        }
+        
+        # Check if any skins are already unlocked
+        for skin_path in self.skin_image_paths:
+            if is_skin_unlocked(skin_path):
+                self.skin_locked_status[skin_path] = False
+        
         for i in range(num_skins):
             skin_path = self.skin_image_paths[i]
+            is_locked = self.skin_locked_status[skin_path]
+            price = self.skin_prices[skin_path]
+            
             button = SkinButton(
                 start_x_skins + i * (skin_button_width + button_spacing),
                 skin_button_y_pos,
                 skin_button_width,
                 skin_button_height,
                 skin_path,
-                SCREEN_WIDTH 
+                SCREEN_WIDTH,
+                is_locked=is_locked,
+                price=price
             )
             self.skin_buttons.append(button)
 
@@ -371,6 +473,9 @@ class MainMenu:
                     if event.key == pygame.K_ESCAPE:
                         pygame.quit()
                         sys.exit()
+                    elif event.key == pygame.K_c:  # Press 'C' to add coins for testing
+                        add_coins(10)
+                        print(f"Added 10 coins for testing. Total: {get_total_coins()}")
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         self.start_button.check_press(event.pos)
@@ -407,11 +512,25 @@ class MainMenu:
                         if not action_taken:
                             for skin_button in self.skin_buttons:
                                 if skin_button.check_release(event.pos):
-                                    for sb in self.skin_buttons:
-                                        sb.is_selected = False
-                                    skin_button.is_selected = True
-                                    self.selected_skin_path = skin_button.image_path
-                                    print(f"Skin selected: {self.selected_skin_path}")
+                                    # If skin is locked, try to unlock it with coins
+                                    if skin_button.is_locked:
+                                        if spend_coins(skin_button.price):
+                                            # Successfully spent coins - unlock the skin
+                                            skin_button.unlock()
+                                            unlock_skin(skin_button.image_path)
+                                            print(f"Unlocked skin: {skin_button.image_path} for {skin_button.price} coins")
+                                        else:
+                                            # Not enough coins
+                                            print(f"Not enough coins to unlock skin. Need {skin_button.price}, have {get_total_coins()}")
+                                            continue  # Skip the selection part
+                                    
+                                    # If skin is not locked (or just got unlocked), select it
+                                    if not skin_button.is_locked:
+                                        for sb in self.skin_buttons:
+                                            sb.is_selected = False
+                                        skin_button.is_selected = True
+                                        self.selected_skin_path = skin_button.image_path
+                                        print(f"Skin selected: {self.selected_skin_path}")
                                     break
             
             # Update the logo animation

@@ -5,8 +5,8 @@ import os
 pygame.init()
 
 # Display settings
-SCREEN_WIDTH = 400
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 500
+SCREEN_HEIGHT = 750
 FPS = 60
 
 # Colors
@@ -51,6 +51,9 @@ HIGH_SCORES = {
     "normal": 0
 }
 
+# Unlocked skins storage
+UNLOCKED_SKINS = []
+
 def add_coins(count):
     """Ajouter des pièces au compteur total"""
     global TOTAL_COINS
@@ -59,6 +62,26 @@ def add_coins(count):
 def get_total_coins():
     """Obtenir le nombre total de pièces"""
     return TOTAL_COINS
+
+def spend_coins(amount):
+    """Spend coins if available"""
+    global TOTAL_COINS
+    if TOTAL_COINS >= amount:
+        TOTAL_COINS -= amount
+        return True
+    return False
+
+def unlock_skin(skin_path):
+    """Mark a skin as unlocked"""
+    global UNLOCKED_SKINS
+    if skin_path not in UNLOCKED_SKINS:
+        UNLOCKED_SKINS.append(skin_path)
+        return True
+    return False
+
+def is_skin_unlocked(skin_path):
+    """Check if a skin is unlocked"""
+    return skin_path in UNLOCKED_SKINS
 
 def update_high_score(mode, score):
     """Update the high score for a specific game mode if the new score is higher"""
