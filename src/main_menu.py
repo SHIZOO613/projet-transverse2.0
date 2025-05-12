@@ -312,12 +312,10 @@ class MainMenu:
             
             # Display high scores
             high_scores_y = coin_rect.bottom + 5  # Reduced from 10 to 5
-            for mode, name in [("normal", "Normal Mode"), ("lava", "Lava Mode"), ("ice", "Ice Mode")]:
-                high_score = get_high_score(mode)
-                score_text = create_pixel_text(f"{name} High Score: {high_score}", self.font, ORANGE)
-                score_rect = score_text.get_rect(centerx=SCREEN_WIDTH//2, top=high_scores_y)
-                self.screen.blit(score_text, score_rect)
-                high_scores_y = score_rect.bottom + 2  # Reduced from 5 to 2
+            high_score = get_high_score("normal")
+            score_text = create_pixel_text(f"High Score: {high_score}", self.font, ORANGE)
+            score_rect = score_text.get_rect(centerx=SCREEN_WIDTH//2, top=high_scores_y)
+            self.screen.blit(score_text, score_rect)
             
             self.start_button.draw(self.screen)
             self.lava_button.draw(self.screen)
