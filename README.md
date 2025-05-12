@@ -44,7 +44,7 @@ A 2D platform game where the player controls a frog that must jump from platform
 - **Main Menu**: Allows players to select game modes and access settings.
 - **Game Over Screen**: Displays the player's score and coin count with options to return to the menu.
 
-### Shop (Planned or Implemented)
+### Shop 
 - **Item Shop**: Use collected coins to purchase new skins or other in-game items.
 
 ### Core Game Components
