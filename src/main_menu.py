@@ -75,6 +75,8 @@ class Button:
 class SkinButton:
     def __init__(self, x, y, width, height, image_path, screen_width_for_aspect):
         self.image_path = image_path
+        
+        # Load character skin image
         try:
             self.original_image = pygame.image.load(image_path)
         except pygame.error as e:
@@ -87,30 +89,119 @@ class SkinButton:
             text_rect = text_surface.get_rect(center=self.original_image.get_rect().center)
             self.original_image.blit(text_surface, text_rect)
 
+        # Load cadre images
+        cadre_path = os.path.join(ASSETS_DIR, "sprites", "frog", "cadre")
+        try:
+            self.normal_cadre = pygame.image.load(os.path.join(cadre_path, "cadre_skins.png"))
+            self.pushed_cadre = pygame.image.load(os.path.join(cadre_path, "cadre_skins_pushed.png"))
+        except pygame.error as e:
+            print(f"Warning: Could not load cadre images: {e}")
+            # Fallback to simple rectangles if cadre images fail to load
+            self.normal_cadre = None
+            self.pushed_cadre = None
 
-        original_img_width = self.original_image.get_width()
-        original_img_height = self.original_image.get_height()
-        aspect_ratio = original_img_width / original_img_height if original_img_height > 0 else 1
-
-        self.width = width
-        self.height = int(width / aspect_ratio) if aspect_ratio > 0 else height
+        # Store original dimensions for skin sizing
+        self.original_width = width
+        self.original_height = height
         
-        self.image = pygame.transform.scale(self.original_image, (self.width, self.height))
+        # Preserve aspect ratio of the original skin image
+        orig_width = self.original_image.get_width()
+        orig_height = self.original_image.get_height()
+        img_aspect_ratio = orig_width / orig_height
         
+        # Keep skin size relative to original dimensions
+        scale_factor = 0.6  # This is for skin sizing
+        max_width = self.original_width * scale_factor
+        max_height = self.original_height * scale_factor
+        
+        # Calculate the dimensions that preserve aspect ratio
+        if max_width / img_aspect_ratio <= max_height:
+            # Width is the limiting factor
+            img_width = max_width
+            img_height = img_width / img_aspect_ratio
+        else:
+            # Height is the limiting factor
+            img_height = max_height
+            img_width = img_height * img_aspect_ratio
+        
+        # Scale the character image to the calculated dimensions
+        self.image = pygame.transform.scale(self.original_image, (int(img_width), int(img_height)))
+        
+        # For the cadre, make it larger (135% of original size)
+        cadre_scale = 1.35  # Increased from 1.25 to 1.35
+        cadre_target_width = int(width * cadre_scale)
+        cadre_target_height = int(height * cadre_scale)
+        
+        # For the cadre, use its native aspect ratio but scale to fit the target dimensions
+        if self.normal_cadre and self.pushed_cadre:
+            cadre_orig_width = self.normal_cadre.get_width()
+            cadre_orig_height = self.normal_cadre.get_height()
+            cadre_aspect = cadre_orig_width / cadre_orig_height
+            
+            # Calculate dimensions that preserve the cadre's aspect ratio
+            if cadre_target_width / cadre_aspect <= cadre_target_height:
+                # Width is the limiting factor
+                cadre_width = cadre_target_width
+                cadre_height = cadre_width / cadre_aspect
+            else:
+                # Height is the limiting factor
+                cadre_height = cadre_target_height
+                cadre_width = cadre_height * cadre_aspect
+            
+            # Scale the cadre images while preserving aspect ratio
+            self.normal_cadre = pygame.transform.scale(self.normal_cadre, (int(cadre_width), int(cadre_height)))
+            self.pushed_cadre = pygame.transform.scale(self.pushed_cadre, (int(cadre_width), int(cadre_height)))
+            
+            # Update dimensions to match cadre size
+            self.width = int(cadre_width)
+            self.height = int(cadre_height)
+        else:
+            # If no cadre, use original dimensions
+            self.width = width
+            self.height = height
+        
+        # Center the button horizontally at x
         self.x = x - self.width // 2
-        self.y = y
+        # Adjust y to keep the bottom of the button at the same position
+        self.y = y - (self.height - height)
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
         self.is_pressed = False
         self.is_selected = False # To indicate if this skin is currently selected
+        
+        # Create green dot for selection indicator
+        self.dot_radius = 6
+        self.dot_color = (0, 255, 0)  # Bright green
+        # Position the dot centered below the button
+        self.dot_pos = (self.x + self.width // 2, self.y + self.height + self.dot_radius + 2)
 
     def draw(self, screen):
-        screen.blit(self.image, self.rect)
+        # First draw the appropriate cadre
         if self.is_selected:
-            pygame.draw.rect(screen, YELLOW, self.rect, 3) # Highlight selected skin with a yellow border
+            if self.pushed_cadre:
+                screen.blit(self.pushed_cadre, self.rect)
+            else:
+                pygame.draw.rect(screen, YELLOW, self.rect, 3)
+            
+            # Draw green dot instead of "SELECTED" text
+            pygame.draw.circle(screen, self.dot_color, self.dot_pos, self.dot_radius)
+            
         elif self.is_pressed:
-            pygame.draw.rect(screen, WHITE, self.rect, 3) # Highlight pressed skin with a white border (optional)
+            if self.pushed_cadre:
+                screen.blit(self.pushed_cadre, self.rect)
+            else:
+                pygame.draw.rect(screen, WHITE, self.rect, 3)
         else:
-            pygame.draw.rect(screen, BLACK, self.rect, 1) # Default border
+            if self.normal_cadre:
+                screen.blit(self.normal_cadre, self.rect)
+            else:
+                pygame.draw.rect(screen, BLACK, self.rect, 1)
+                
+        # Calculate the exact center position for the skin image
+        char_x = self.x + (self.width - self.image.get_width()) // 2
+        char_y = self.y + (self.height - self.image.get_height()) // 2
+        
+        # Draw the character image precisely centered on the cadre
+        screen.blit(self.image, (char_x, char_y))
 
     def check_press(self, pos):
         if self.rect.collidepoint(pos):
@@ -135,17 +226,34 @@ class MainMenu:
         pygame.display.set_caption("Cloud Jump - Main Menu")
         self.clock = pygame.time.Clock()
         
-        # Charger le logo
+        # Charger les deux frames du logo pour l'animation
         logo_path = os.path.join(ASSETS_DIR, "Main menu", "Logo", "Main Logo.png")
-        self.logo = pygame.image.load(logo_path)
+        logo_second_frame_path = os.path.join(ASSETS_DIR, "Main menu", "Logo", "Main_ Logo_secondframe.png")
         
-        # Redimensionner le logo pour qu'il ait une taille maximale
-        logo_width = min(SCREEN_WIDTH * 0.99, self.logo.get_width() * 6.5)  # Augmenté à 6.5x
-        logo_height = logo_width * (self.logo.get_height() / self.logo.get_width())
-        self.logo = pygame.transform.scale(self.logo, (int(logo_width), int(logo_height)))
+        # Charger les deux images
+        self.logo_frames = []
+        self.logo_frames.append(pygame.image.load(logo_path))
+        
+        try:
+            self.logo_frames.append(pygame.image.load(logo_second_frame_path))
+        except pygame.error as e:
+            print(f"Warning: Could not load second logo frame: {e}")
+            # En cas d'erreur, dupliquer le premier frame comme fallback
+            self.logo_frames.append(self.logo_frames[0])
+        
+        # Variables d'animation
+        self.logo_animation_speed = 0.5  # Secondes par frame
+        self.logo_animation_timer = 0
+        self.current_logo_frame = 0
+        
+        # Redimensionner les frames du logo
+        for i in range(len(self.logo_frames)):
+            logo_width = min(SCREEN_WIDTH * 0.99, self.logo_frames[i].get_width() * 6.5)
+            logo_height = logo_width * (self.logo_frames[i].get_height() / self.logo_frames[i].get_width())
+            self.logo_frames[i] = pygame.transform.scale(self.logo_frames[i], (int(logo_width), int(logo_height)))
         
         # Positionner le logo
-        self.logo_rect = self.logo.get_rect(centerx=SCREEN_WIDTH//2, top=SCREEN_HEIGHT//30)
+        self.logo_rect = self.logo_frames[0].get_rect(centerx=SCREEN_WIDTH//2, top=SCREEN_HEIGHT//30)
         
         # Police pour le compteur de pièces
         self.font = pygame.font.Font(None, 36)
@@ -185,26 +293,32 @@ class MainMenu:
         self.selected_skin_path = None # To store the path of the selected skin
         self.skin_buttons = []
         
-        skin_button_width = button_width // 2
+        # Make skin buttons smaller
+        skin_button_width = int(button_width // 2 * 0.8)
         skin_button_height = skin_button_width
 
-        skin_button_y_pos = ice_button_y + self.ice_button.height + 20
+        # Position at bottom of screen
+        skin_button_y_pos = SCREEN_HEIGHT - skin_button_height - 30
+        
+        # Adjust spacing
+        button_spacing = 40
+        num_skins = 3
+        total_skin_buttons_width = num_skins * skin_button_width + (num_skins - 1) * button_spacing
+        
+        # Center horizontally
+        start_x_skins = (SCREEN_WIDTH // 2) - (total_skin_buttons_width // 2) + (skin_button_width // 2)
 
-        num_skins = 3 # Changed from 2 to 3
-        total_skin_buttons_width = num_skins * skin_button_width + (num_skins - 1) * 20 if num_skins > 0 else 0
-        start_x_skins = SCREEN_WIDTH // 2 - total_skin_buttons_width // 2
-
-        # Updated paths for skin images - adding a placeholder for the 3rd skin
+        # Updated paths for skin images
         self.skin_image_paths = [
             os.path.join(ASSETS_DIR, "sprites", "frog", "skins", "Winter_frog_skin", "idle_winterfrog", "frog_idle0_winter.png"),
             os.path.join(ASSETS_DIR, "sprites", "frog", "Idle frog", "frog_idle0.png"),
-            os.path.join(ASSETS_DIR, "sprites", "frog", "skins", "Yellow_frog_skin", "idle_winterfrog", "frog_idle0_hiver_jauen_clair.png") # Path for Yellow Skin
+            os.path.join(ASSETS_DIR, "sprites", "frog", "skins", "Yellow_frog_skin", "idle_winterfrog", "frog_idle0_hiver_jauen_clair.png")
         ]
         
         for i in range(num_skins):
             skin_path = self.skin_image_paths[i]
             button = SkinButton(
-                start_x_skins + i * (skin_button_width + 20) + skin_button_width // 2,
+                start_x_skins + i * (skin_button_width + button_spacing),
                 skin_button_y_pos,
                 skin_button_width,
                 skin_button_height,
@@ -213,11 +327,11 @@ class MainMenu:
             )
             self.skin_buttons.append(button)
 
-        # Skin Choice Text
-        self.skin_choice_font = pygame.font.Font(None, 30) # Smaller font for this label
+        # Skin Choice Text - Positioned above the skin buttons at the bottom
+        self.skin_choice_font = pygame.font.Font(None, 30)  # Smaller font
         self.skin_choice_text_surface = create_pixel_text("SKIN CHOICE", self.skin_choice_font, WHITE)
         # Position above the skin buttons
-        text_y_pos = skin_button_y_pos - self.skin_choice_text_surface.get_height() - 10 # 10px padding above
+        text_y_pos = skin_button_y_pos - self.skin_choice_text_surface.get_height() - 10
         self.skin_choice_text_rect = self.skin_choice_text_surface.get_rect(centerx=SCREEN_WIDTH // 2, y=text_y_pos)
 
         if self.skin_buttons:
@@ -246,6 +360,9 @@ class MainMenu:
         menu_outcome = None 
         
         while running and menu_outcome is None: # Loop until an outcome is determined
+            # Get the time elapsed since last frame for animation timing
+            delta_time = self.clock.tick(FPS) / 1000.0  # Convert to seconds
+            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -296,13 +413,20 @@ class MainMenu:
                                     self.selected_skin_path = skin_button.image_path
                                     print(f"Skin selected: {self.selected_skin_path}")
                                     break
-                            
+            
+            # Update the logo animation
+            self.logo_animation_timer += delta_time
+            if self.logo_animation_timer >= self.logo_animation_speed:
+                self.current_logo_frame = (self.current_logo_frame + 1) % len(self.logo_frames)
+                self.logo_animation_timer = 0
+                
             self.background.update()
             
             self.screen.fill((0, 0, 0))
             self.background.draw(self.screen)
             
-            self.screen.blit(self.logo, self.logo_rect)
+            # Draw the current logo frame
+            self.screen.blit(self.logo_frames[self.current_logo_frame], self.logo_rect)
             
             # Display total coins
             total_coins = get_total_coins()
@@ -329,6 +453,5 @@ class MainMenu:
                 skin_button.draw(self.screen)
             
             pygame.display.flip()
-            self.clock.tick(FPS)
             
         return menu_outcome # Return the dictionary 

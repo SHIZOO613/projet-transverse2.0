@@ -7,6 +7,24 @@ from config import (
     PLATFORM_HEIGHT, PROJECT_ROOT, ASSETS_DIR, ANIMATION_SPEED
 )
 
+# Physics constants for projectile motion
+# GRAVITY = acceleration due to gravity (pixels/frame²)
+# DELTA_T = time step per frame (implicit = 1)
+# JUMP_HORIZONTAL_FACTOR = scaling factor for horizontal velocity
+# MAX_HORIZONTAL_DISTANCE = constraint on input direction magnitude
+
+# In this simulation, we use a discrete-time approximation to the continuous
+# equations of motion, with each frame representing one time step (DELTA_T = 1).
+# 
+# The full projectile motion equations are:
+#  x(t) = x₀ + v₀ₓ·t
+#  y(t) = y₀ + v₀ᵧ·t + (1/2)·GRAVITY·t²
+#
+# For our discrete time steps:
+#  x[n+1] = x[n] + vₓ[n]·DELTA_T
+#  y[n+1] = y[n] + vᵧ[n]·DELTA_T
+#  vᵧ[n+1] = vᵧ[n] + GRAVITY·DELTA_T
+
 class Player:
     """Player character (frog) with jumping mechanics."""
     
@@ -44,50 +62,17 @@ class Player:
             'sliding': None
         }
         
-        # Chargement des sprites Idle
-        # If a specific skin_path for an idle animation is provided, try to use it and its sequence.
-        # Otherwise, fall back to default idle animation.
+        # Chargement des sprites Idle basé sur le skin sélectionné
         if self.skin_base_path and os.path.exists(self.skin_base_path):
-            # Assuming skin_base_path is the path to the first idle frame (e.g., .../frog_idle0.png)
-            # We need a way to get other frames if it's an animation.
-            # For simplicity, let's assume the provided skin_path is the *only* idle frame for now,
-            # or that it implies a naming convention we can derive.
-            
-            # Attempt to load a sequence if the path suggests it (e.g., ends with 0.png)
-            base_name, ext = os.path.splitext(os.path.basename(self.skin_base_path))
-            dir_name = os.path.dirname(self.skin_base_path)
-            
-            loaded_idle_sprites = 0
-            if base_name.endswith('0'): # Check if it looks like a sequence start (e.g., frog_idle0)
-                name_prefix = base_name[:-1] # e.g., frog_idle
-                for i in range(4): # Try to load 4 frames like the default
-                    frame_path = os.path.join(dir_name, f"{name_prefix}{i}{ext}")
-                    if os.path.exists(frame_path):
-                        self.sprites['idle'].append(self.load_sprite(frame_path))
-                        loaded_idle_sprites += 1
-                    else:
-                        # If a frame is missing in the sequence, stop for this skin
-                        # or we could just load what's available.
-                        # For now, if one is missing, we might have an incomplete animation.
-                        break 
-            
-            if not loaded_idle_sprites: # If sequence loading failed or not applicable
-                # Load just the single provided skin_path as the only idle sprite
-                self.sprites['idle'].append(self.load_sprite(self.skin_base_path))
-                self.idle_sequence = [0] # Only one frame in the sequence
-            elif loaded_idle_sprites < 4 and loaded_idle_sprites > 0:
-                # If we loaded some but not all 4, adjust idle_sequence
-                self.idle_sequence = list(range(loaded_idle_sprites)) 
-                # Could make a more complex sequence like [0,1,..,n-1, n-2, ..., 1] if more than 1 frame
-                if loaded_idle_sprites > 1:
-                    self.idle_sequence += list(range(loaded_idle_sprites - 2, 0, -1))
-                else: # single frame
-                    self.idle_sequence = [0]
-
-            if not self.sprites['idle'] : # Ultimate fallback if all loading failed
-                print(f"Warning: Could not load any idle sprites for skin {self.skin_base_path}. Falling back to default idle.")
-                self.load_default_idle_sprites()
-
+            # Si le skin est le Winter Frog
+            if "Winter_frog_skin" in self.skin_base_path:
+                self.load_winter_skin_idle()
+            # Si le skin est le Yellow Frog
+            elif "Yellow_frog_skin" in self.skin_base_path:
+                self.load_yellow_skin_idle()
+            # Pour le skin par défaut ou autre
+            else:
+                self.load_idle_animation_from_path(self.skin_base_path)
         else:
             # Fallback to default idle animation if no skin_path or path doesn't exist
             if skin_path: # only print warning if a path was given but not found
@@ -376,104 +361,125 @@ class Player:
             self.charge = 0
             
     def predict_trajectory(self):
-        """Calculate and return points along predicted jump trajectory."""
+        """
+        Calculate and return points along predicted jump trajectory using projectile motion equations.
+        
+        The trajectory follows classical kinematics equations for projectile motion:
+        x(t) = x₀ + v₀ₓ·t
+        y(t) = y₀ + v₀ᵧ·t + (1/2)·g·t²
+        
+        Where:
+        - (x₀, y₀) is the initial position
+        - (v₀ₓ, v₀ᵧ) are the initial velocity components
+        - g is the gravitational acceleration (positive downward)
+        - t is time
+        """
         if not self.charging or not self.on_ground:
             return []
             
-        # Get mouse position for direction
+        # Get mouse position for direction vector calculation
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        dx = mouse_x - (self.x + self.size // 2)
-        # Limit horizontal distance for prediction
-        dx = max(min(dx, MAX_HORIZONTAL_DISTANCE), -MAX_HORIZONTAL_DISTANCE)
         
-        # Calculate predicted trajectory points
-        points = []
+        # Initial position (x₀, y₀)
+        x_0 = self.x + self.size // 2
+        y_0 = self.y + self.size // 2
+        
+        # Calculate direction vector Δx = mouse_x - x₀ (constraint to max horizontal distance)
+        delta_x = mouse_x - x_0
+        delta_x = max(min(delta_x, MAX_HORIZONTAL_DISTANCE), -MAX_HORIZONTAL_DISTANCE)
+        
+        # Initial velocity components (v₀ₓ, v₀ᵧ)
+        # v₀ₓ = Δx × JUMP_HORIZONTAL_FACTOR
+        v_0x = delta_x * JUMP_HORIZONTAL_FACTOR
+        
+        # v₀ᵧ = -jump_power (negative because y-axis is inverted in screen coordinates)
         jump_power = self.charge
-        pred_x = self.x + self.size // 2
-        pred_y = self.y + self.size // 2
-        pred_vel_x = dx * JUMP_HORIZONTAL_FACTOR
-        pred_vel_y = -jump_power
+        v_0y = -jump_power
         
-        # Augmenter le nombre de points pour voir une parabole plus complète
-        # et tracer la parabole complète sans se soucier des collisions
-        for _ in range(50):  # Augmenter pour une trajectoire plus longue
-            pred_vel_y += GRAVITY
-            pred_x += pred_vel_x
-            pred_y += pred_vel_y
+        # Trajectory points array for visualization
+        points = []
+        
+        # Simulate projectile motion over discrete time steps
+        # x(t) = x₀ + v₀ₓ·t
+        # y(t) = y₀ + v₀ᵧ·t + (1/2)·g·t²
+        # Discretized as:
+        # x[i+1] = x[i] + vₓ[i]
+        # y[i+1] = y[i] + vᵧ[i]
+        # vᵧ[i+1] = vᵧ[i] + g
+        x_t = x_0
+        y_t = y_0
+        v_x = v_0x
+        v_y = v_0y
+        
+        # Compute trajectory for multiple time steps
+        # Using t = 0, Δt, 2Δt, ..., 49Δt
+        for t_step in range(50):  # 50 discrete time steps
+            # Update velocity due to gravity: vᵧ[i+1] = vᵧ[i] + g
+            v_y += GRAVITY
             
-            # Vérifier uniquement que le point est dans les limites horizontales de l'écran
-            # mais continuer à tracer même en dessous de l'écran pour la parabole complète
-            if 0 <= pred_x <= SCREEN_WIDTH and pred_y <= SCREEN_HEIGHT + 400:
-                points.append((int(pred_x), int(pred_y)))
+            # Update position: x[i+1] = x[i] + vₓ[i], y[i+1] = y[i] + vᵧ[i]
+            x_t += v_x
+            y_t += v_y
             
-            # Si on sort horizontalement de l'écran ou si on descend trop bas, arrêter
-            if pred_x < 0 or pred_x > SCREEN_WIDTH or pred_y > SCREEN_HEIGHT + 500:
+            # Bounds checking: only add points within visible area plus some margin
+            # for showing complete parabolic arcs
+            if 0 <= x_t <= SCREEN_WIDTH and y_t <= SCREEN_HEIGHT + 400:
+                points.append((int(x_t), int(y_t)))
+            
+            # Break if trajectory goes too far outside visible bounds
+            if x_t < 0 or x_t > SCREEN_WIDTH or y_t > SCREEN_HEIGHT + 500:
                 break
             
         return points
             
-    def draw(self, screen):
-        """Draw the player and related UI elements (charge bar, trajectory)."""
-        # Déterminer le sprite de base à utiliser
-        base_sprite = None
+    def draw(self, screen, debug=False):
+        """Dessine le joueur sur l'écran"""
+        # Détermine le sprite à utiliser en fonction de l'animation en cours
+        sprite = None
         if self.current_animation == 'idle':
-            if self.sprites['idle']: # Check if idle sprites are loaded
-                frame_index = self.idle_sequence[self.current_frame % len(self.idle_sequence)] # Ensure index is valid
-                if frame_index < len(self.sprites['idle']): # Double check index validity
-                    base_sprite = self.sprites['idle'][frame_index]
-                else:
-                    print(f"Warning: Invalid frame_index {frame_index} for idle animation.")
-                    # Fallback to first idle frame or default color if very broken
-                    if self.sprites['idle']:
-                         base_sprite = self.sprites['idle'][0]
-            if not base_sprite: # If still no base_sprite, use fallback color
-                 # This case should be rare if load_default_idle_sprites has its own fallback
-                pygame.draw.rect(screen, self.color, (self.x, self.y, self.size, self.size))
-                # Draw charge bar and trajectory even with fallback color
-                if self.charging and self.on_ground:
-                    pygame.draw.rect(screen, WHITE, (self.x, self.y - 15, self.size, 10))
-                    charge_width = int(self.size * (self.charge / MAX_CHARGE))
-                    pygame.draw.rect(screen, YELLOW, (self.x, self.y - 15, charge_width, 10))
-                    points = self.predict_trajectory()
-                    if len(points) > 1:
-                        pygame.draw.lines(screen, RED, False, points, 1)
-                return # Exit early if using fallback color
-
-        else: # For 'charge', 'jump', 'sliding'
-            base_sprite = self.sprites[self.current_animation]
-        
-        # Si base_sprite n'a pas pu être déterminé (même pour les actions), utiliser le fallback
-        if not base_sprite:
-            pygame.draw.rect(screen, self.color, (self.x, self.y, self.size, self.size))
-            # Draw charge bar and trajectory even with fallback color
-            if self.charging and self.on_ground:
-                pygame.draw.rect(screen, WHITE, (self.x, self.y - 15, self.size, 10))
-                charge_width = int(self.size * (self.charge / MAX_CHARGE))
-                pygame.draw.rect(screen, YELLOW, (self.x, self.y - 15, charge_width, 10))
-                points = self.predict_trajectory()
-                if len(points) > 1:
-                    pygame.draw.lines(screen, RED, False, points, 1)
-            return # Exit early
-
-        # Déterminer si la grenouille doit être retournée horizontalement
-        should_flip = False
-        if self.charging:
-            mouse_x, _ = pygame.mouse.get_pos()
-            if mouse_x < self.x + self.size // 2: # Souris à gauche du joueur
-                should_flip = True
-        elif self.vel_x != 0: # Si le joueur bouge horizontalement
-            if self.vel_x < 0: # Bouge vers la gauche
-                should_flip = True
-        # Si vel_x est 0 et pas en charge, on garde la dernière orientation (pas de flip ici, sprite est déjà orienté)
-
-        # Appliquer le flip si nécessaire
-        sprite_to_draw = base_sprite
-        if should_flip:
-            sprite_to_draw = pygame.transform.flip(base_sprite, True, False)
+            if self.sprites['idle'] and self.current_frame < len(self.idle_sequence) and self.idle_sequence[self.current_frame] < len(self.sprites['idle']):
+                frame_index = self.idle_sequence[self.current_frame]
+                sprite = self.sprites['idle'][frame_index]
+        elif self.current_animation in self.sprites and self.sprites[self.current_animation]:
+            sprite = self.sprites[self.current_animation]
             
-        screen.blit(sprite_to_draw, (self.x, self.y))
-        
-        # Draw charge meter if charging
+        # Dessine le sprite ou un rectangle de couleur si pas de sprite
+        if sprite:
+            # IMPORTANT: Default sprite orientation is facing RIGHT
+            # We need to flip when facing LEFT
+            
+            # Determine if we should flip the sprite based on direction
+            flip_sprite = False
+            
+            # When jumping, base flipping on horizontal velocity
+            if self.jumping and self.vel_x != 0:
+                # INVERTED: Flip if moving RIGHT (positive velocity) to match game logic
+                flip_sprite = self.vel_x > 0
+            # When charging, face toward mouse cursor
+            elif self.charging:
+                mouse_x, _ = pygame.mouse.get_pos()
+                # INVERTED: Flip if cursor is to the RIGHT of player
+                flip_sprite = mouse_x > self.x + self.size // 2
+            # When sliding or idle, determine based on recent movement
+            elif self.current_animation == 'sliding':
+                # INVERTED: When sliding, flip if moving RIGHT
+                flip_sprite = self.vel_x > 0
+            # For idle, we'd ideally remember the last direction
+            # Since we don't track that yet, we'll default to facing right
+            
+            # Create a copy of the sprite so we can flip it if needed
+            display_sprite = sprite
+            if flip_sprite:
+                display_sprite = pygame.transform.flip(sprite, True, False)
+                
+            # Position the sprite centered on player's position
+            sprite_rect = display_sprite.get_rect(center=(self.x + self.size // 2, self.y + self.size // 2))
+            screen.blit(display_sprite, sprite_rect)
+        else:
+            # Fallback to rectangle if sprite is missing
+            pygame.draw.rect(screen, self.color, (self.x, self.y, self.size, self.size))
+    
+        # Draw charge bar when charging
         if self.charging and self.on_ground:
             # Draw charge bar background
             pygame.draw.rect(screen, WHITE, (self.x, self.y - 15, self.size, 10))
@@ -484,10 +490,138 @@ class Player:
             # Draw predicted trajectory
             points = self.predict_trajectory()
             if len(points) > 1:
-                # Dessiner des points sur la trajectoire
-                for point in points:
-                    pygame.draw.circle(screen, RED, point, 2)
+                # Draw points along trajectory to visualize the discrete time steps
+                # of the parametric equation (x(t), y(t))
+                for i, point in enumerate(points):
+                    # Draw larger points at key positions (start, apex, end)
+                    if i == 0:  # Initial position (t = 0)
+                        pygame.draw.circle(screen, (255, 0, 0), point, 3)  # Red
+                    elif i == len(points) - 1:  # Final position
+                        pygame.draw.circle(screen, (255, 0, 0), point, 3)  # Red
+                    elif i > 0 and points[i-1][1] > point[1] and i < len(points)-1 and points[i+1][1] > point[1]:
+                        # Apex of the parabola (where dy/dt = 0)
+                        pygame.draw.circle(screen, (255, 255, 0), point, 3)  # Yellow
+                    else:
+                        # Regular points along the trajectory
+                        pygame.draw.circle(screen, (255, 100, 100), point, 2)  # Light red
                 
-                # Ajouter une ligne entre les points pour une trajectoire plus visible
+                # Draw the parametric curve representing the trajectory
+                # This visualizes the continuous function (x(t), y(t)) for t ∈ [0, t_max]
+                pygame.draw.lines(screen, (255, 0, 0), False, points, 2)
+        
+        # Affichage du debug
+        if debug:
+            # Contour du joueur
+            pygame.draw.rect(screen, RED, (self.x, self.y, self.size, self.size), 1)
+            
+            # Affichage de la charge
+            if self.charging:
+                charge_height = 5
+                charge_width = (self.charge / MAX_CHARGE) * 50
+                pygame.draw.rect(screen, RED, (self.x, self.y - 10, charge_width, charge_height))
+                
+            # Affichage du vecteur de saut
+            if self.jump_target:
+                points = [
+                    (self.x + self.size // 2, self.y + self.size // 2),
+                    self.jump_target
+                ]
                 if len(points) >= 2:
-                    pygame.draw.lines(screen, RED, False, points, 1) 
+                    pygame.draw.lines(screen, RED, False, points, 1)
+
+    def load_winter_skin_idle(self):
+        """Load the Winter frog skin idle animation"""
+        self.sprites['idle'] = []
+        winter_idle_folder = os.path.dirname(self.skin_base_path)
+        
+        # Try to load all 4 idle frames
+        for i in range(4):
+            sprite_path = os.path.join(winter_idle_folder, f"frog_idle{i}_winter.png")
+            loaded_sprite = self.load_sprite(sprite_path)
+            if loaded_sprite:
+                self.sprites['idle'].append(loaded_sprite)
+            else:
+                print(f"Warning: Failed to load Winter idle sprite: {sprite_path}")
+        
+        # If we loaded any sprites, update the sequence
+        if self.sprites['idle']:
+            if len(self.sprites['idle']) >= 4:
+                self.idle_sequence = [0, 1, 2, 3, 2, 1]
+            else:
+                self.idle_sequence = list(range(len(self.sprites['idle'])))
+                if len(self.sprites['idle']) > 1:
+                    self.idle_sequence += list(range(len(self.sprites['idle']) - 2, 0, -1))
+        else:
+            print("Warning: Could not load any Winter skin idle sprites. Falling back to default.")
+            self.load_default_idle_sprites()
+    
+    def load_yellow_skin_idle(self):
+        """Load the Yellow frog skin idle animation"""
+        self.sprites['idle'] = []
+        yellow_idle_folder = os.path.dirname(self.skin_base_path)
+        
+        # Keep track if we successfully loaded any frames
+        frames_loaded = 0
+        
+        # Try to load all 4 idle frames with correct naming
+        for i in range(4):
+            # First try with the correct spelling
+            sprite_path = os.path.join(yellow_idle_folder, f"frog_idle{i}_hiver_jaune_clair.png")
+            
+            # If the file doesn't exist, try alternative spelling
+            if not os.path.exists(sprite_path):
+                sprite_path = os.path.join(yellow_idle_folder, f"frog_idle{i}_hiver_jauen_clair.png")
+            
+            if os.path.exists(sprite_path):
+                loaded_sprite = self.load_sprite(sprite_path)
+                if loaded_sprite:
+                    self.sprites['idle'].append(loaded_sprite)
+                    frames_loaded += 1
+                else:
+                    print(f"Warning: Failed to load Yellow idle sprite: {sprite_path}")
+            else:
+                print(f"Warning: Could not find Yellow idle sprite with index {i}")
+        
+        # If we loaded at least one frame, make sure we have something for the animation
+        if frames_loaded > 0:
+            print(f"Loaded {frames_loaded} frames for Yellow frog idle animation")
+            # If we have fewer than 4 frames, duplicate the last frame until we have at least 4
+            while len(self.sprites['idle']) < 4:
+                self.sprites['idle'].append(self.sprites['idle'][frames_loaded - 1])
+            
+            # Use the standard idle sequence now that we have 4 frames
+            self.idle_sequence = [0, 1, 2, 3, 2, 1]
+        else:
+            print("Warning: Could not load any Yellow skin idle sprites. Falling back to default.")
+            self.load_default_idle_sprites()
+    
+    def load_idle_animation_from_path(self, path):
+        """Load idle animation from a given path, assuming a naming convention"""
+        self.sprites['idle'] = []
+        base_name, ext = os.path.splitext(os.path.basename(path))
+        dir_name = os.path.dirname(path)
+        
+        loaded_idle_sprites = 0
+        if base_name.endswith('0'):  # Check if it looks like a sequence start (e.g., frog_idle0)
+            name_prefix = base_name[:-1]  # e.g., frog_idle
+            for i in range(4):  # Try to load 4 frames
+                frame_path = os.path.join(dir_name, f"{name_prefix}{i}{ext}")
+                if os.path.exists(frame_path):
+                    self.sprites['idle'].append(self.load_sprite(frame_path))
+                    loaded_idle_sprites += 1
+                else:
+                    break
+        
+        if not loaded_idle_sprites:  # If sequence loading failed
+            # Load just the single provided path as the only idle sprite
+            self.sprites['idle'].append(self.load_sprite(path))
+            self.idle_sequence = [0]  # Only one frame
+        elif loaded_idle_sprites < 4 and loaded_idle_sprites > 0:
+            # Adjust sequence for partial frames
+            self.idle_sequence = list(range(loaded_idle_sprites))
+            if loaded_idle_sprites > 1:
+                self.idle_sequence += list(range(loaded_idle_sprites - 2, 0, -1))
+        
+        if not self.sprites['idle']:  # Ultimate fallback
+            print(f"Warning: Could not load any idle sprites from {path}. Falling back to default.")
+            self.load_default_idle_sprites() 
