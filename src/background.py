@@ -25,7 +25,7 @@ class Background(BackgroundBase):
             # Fond complet, échelle lisse
             {'speed': 0.15, 'amplitude': 4, 'scale': 0.25, 'y_offset': 50, 'x_offset': -100, 'is_pixel_art': True},
             # Silhouette de nuage, côté gauche
-            {'speed': 0.18, 'amplitude': 5, 'scale': 0.2, 'y_offset': 170, 'x_offset': 120, 'is_pixel_art': True},
+            {'speed': 0.18, 'amplitude': 5, 'scale': 0.2, 'y_offset': 170, 'x_offset': 170, 'is_pixel_art': True},
             # Ligne fine, plus à droite
             {'speed': 0.2, 'amplitude': 6, 'scale': 0.15, 'y_offset': 250, 'x_offset': -110, 'is_pixel_art': True}
             # Nuages détaillés, plus à gauche
