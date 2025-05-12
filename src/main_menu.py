@@ -437,21 +437,29 @@ class MainMenu:
         self.skin_choice_text_rect = self.skin_choice_text_surface.get_rect(centerx=SCREEN_WIDTH // 2, y=text_y_pos)
 
         if self.skin_buttons:
-            first_skin_button = self.skin_buttons[0]
-            if os.path.exists(first_skin_button.image_path):
-                 first_skin_button.is_selected = True
-                 self.selected_skin_path = first_skin_button.image_path
-            else:
-                for sb_idx, sb in enumerate(self.skin_buttons):
-                    if os.path.exists(sb.image_path):
-                        sb.is_selected = True
-                        self.selected_skin_path = sb.image_path
-                        for other_sb_idx, other_sb in enumerate(self.skin_buttons):
-                            if sb_idx != other_sb_idx:
-                                other_sb.is_selected = False
-                        break 
-                if not self.selected_skin_path:
-                     print("Warning: No valid skin images found for default selection.")
+            # Select the normal frog (index 1) by default
+            normal_frog_index = 1  # Index of the normal frog skin
+            if len(self.skin_buttons) > normal_frog_index:
+                # Deselect all skins first
+                for sb in self.skin_buttons:
+                    sb.is_selected = False
+                
+                # Select the normal frog
+                normal_frog_button = self.skin_buttons[normal_frog_index]
+                if os.path.exists(normal_frog_button.image_path) and not normal_frog_button.is_locked:
+                    normal_frog_button.is_selected = True
+                    self.selected_skin_path = normal_frog_button.image_path
+                else:
+                    # If normal frog isn't available, find the first unlocked skin
+                    for sb in self.skin_buttons:
+                        if os.path.exists(sb.image_path) and not sb.is_locked:
+                            sb.is_selected = True
+                            self.selected_skin_path = sb.image_path
+                            break
+            
+            # If no skin is selected yet, show a warning
+            if not self.selected_skin_path:
+                print("Warning: No valid unlocked skin found for default selection.")
         else: # Handle case with no skins
             print("Warning: No skin buttons created.")
 
