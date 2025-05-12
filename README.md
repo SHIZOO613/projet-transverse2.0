@@ -44,6 +44,10 @@ A 2D platform game where the player controls a frog that must jump from platform
 - **Main Menu**: Allows players to select game modes and access settings.
 - **Game Over Screen**: Displays the player's score and coin count with options to return to the menu.
 
+### Audio Features
+- **Background Music**: A soundtrack plays during gameplay to enhance the experience.
+- **Sound Effects**: Collecting coins triggers a sound effect, adding audio feedback to the game.
+
 ### Shop 
 - **Item Shop**: Use collected coins to purchase new skins or other in-game items.
 
