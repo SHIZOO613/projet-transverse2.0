@@ -12,13 +12,14 @@ from background import Background
 from player import Player
 from game_platform import Platform, MovingPlatform, BreakablePlatform, IcePlatform  # Import from our renamed game_platform classes
 from coin import Coin
+from audio_manager import audio_manager
 
 class Game(GameBase):
     """Mode de jeu normal avec plateformes variées et fond de nuages."""
     
     def __init__(self, player_skin_path):
-        # Appel du constructeur de la classe parente
-        super().__init__(title="Cloud Jump")
+        # Appel du constructeur de la classe parente avec le mode de jeu "normal"
+        super().__init__(title="Cloud Jump", game_mode="normal")
         
         self.player_skin_path = player_skin_path # Store the skin path
 

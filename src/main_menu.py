@@ -4,6 +4,7 @@ import sys
 from utils import create_pixel_text
 from background import Background
 from config import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, ASSETS_DIR, WHITE, YELLOW, get_total_coins, BLACK, get_high_score, ORANGE, is_skin_unlocked, unlock_skin, spend_coins, add_coins
+from audio_manager import audio_manager
 
 class Button:
     def __init__(self, x, y, width, height):
@@ -304,6 +305,9 @@ class MainMenu:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Cloud Jump - Main Menu")
         self.clock = pygame.time.Clock()
+        
+        # Play menu theme music
+        audio_manager.play_music("menu")
         
         # Charger les deux frames du logo pour l'animation
         logo_path = os.path.join(ASSETS_DIR, "Main menu", "Logo", "Main Logo.png")

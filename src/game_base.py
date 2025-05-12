@@ -2,16 +2,23 @@ import pygame
 from config import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, WHITE, YELLOW, RED
 from utils import create_pixel_text
 from player import Player
+from audio_manager import audio_manager  # Import the audio manager
 
 class GameBase:
     """Classe de base pour les modes de jeu, contenant la logique commune"""
     
-    def __init__(self, title="Cloud Jump"):
+    def __init__(self, title="Cloud Jump", game_mode="normal"):
         """Initialiser la classe de base avec les éléments communs aux différents modes"""
         # Configuration de base
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
+        
+        # Store the game mode for audio
+        self.game_mode = game_mode
+        
+        # Start the appropriate music
+        audio_manager.play_music(self.game_mode)
         
         # Polices communes
         self.regular_font = pygame.font.Font(None, 36)
@@ -92,6 +99,8 @@ class GameBase:
             if result == "QUIT":
                 running = False
             elif result == "MENU":
+                # Switch to menu music when returning to the menu
+                audio_manager.play_music("menu")
                 return "MENU"  # Signal pour retourner au menu
             
             # Mettre à jour l'état du jeu

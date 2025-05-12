@@ -11,13 +11,14 @@ from game_base import GameBase
 from ice_background import IceBackground
 from player import Player
 from game_platform import Platform, IcePlatform
+from audio_manager import audio_manager
 
 class IceGame(GameBase):
     """Mode de jeu 'glace' avec uniquement des plateformes de glace, sauf la première."""
     
     def __init__(self, player_skin_path):
-        # Appel du constructeur de la classe parente
-        super().__init__(title="Cloud Jump - Ice Mode")
+        # Appel du constructeur de la classe parente avec le mode de jeu "ice"
+        super().__init__(title="Cloud Jump - Ice Mode", game_mode="ice")
         
         self.player_skin_path = player_skin_path # Store the skin path
 

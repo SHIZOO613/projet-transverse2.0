@@ -11,13 +11,14 @@ from game_base import GameBase
 from lava_background import LavaBackground
 from player import Player
 from game_platform import Platform, BreakablePlatform  # Import from our renamed game_platform classes
+from audio_manager import audio_manager
 
 class LavaGame(GameBase):
     """Mode de jeu 'lave' avec uniquement des plateformes cassables et un fond de lave."""
     
     def __init__(self, player_skin_path):
-        # Appel du constructeur de la classe parente
-        super().__init__(title="Cloud Jump - Lava Mode")
+        # Appel du constructeur de la classe parente avec le mode correspondant
+        super().__init__(title="Cloud Jump - Lava Mode", game_mode="lava")
         
         self.player_skin_path = player_skin_path # Store the skin path
 

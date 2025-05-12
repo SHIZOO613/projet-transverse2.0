@@ -42,6 +42,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 ASSETS_DIR = os.path.join(PROJECT_ROOT, "assets")
 BG_ASSETS_DIR = os.path.join(ASSETS_DIR, "backgrounds")
+AUDIO_DIR = os.path.join(ASSETS_DIR, "audios")
 
 # Gestion du nombre total de pièces
 TOTAL_COINS = 0
