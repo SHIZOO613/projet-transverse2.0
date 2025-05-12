@@ -48,9 +48,7 @@ TOTAL_COINS = 0
 
 # High scores for each game mode
 HIGH_SCORES = {
-    "normal": 0,
-    "lava": 0,
-    "ice": 0
+    "normal": 0
 }
 
 def add_coins(count):

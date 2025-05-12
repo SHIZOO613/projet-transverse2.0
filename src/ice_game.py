@@ -157,8 +157,6 @@ class IceGame(GameBase):
                 if event.key == pygame.K_ESCAPE:
                     return "QUIT"
                 elif event.key == pygame.K_SPACE and self.game_over:
-                    # Update high score before returning to menu
-                    update_high_score("ice", self.score)
                     return "MENU"  # Retourner au menu principal
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1 and not self.game_over:  # Left mouse button
