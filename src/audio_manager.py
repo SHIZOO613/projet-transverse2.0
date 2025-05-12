@@ -16,12 +16,30 @@ class AudioManager:
             "ice": os.path.join(AUDIO_DIR, "theme", "ice_theme.mp3")
         }
         
+        # Sound effects dictionary
+        self.sound_effects = {
+            "coin": os.path.join(AUDIO_DIR, "sound_effect", "coin-recieved-230517.mp3")
+        }
+        
+        # Load sound effects
+        self.loaded_sounds = {}
+        for sound_name, sound_path in self.sound_effects.items():
+            try:
+                self.loaded_sounds[sound_name] = pygame.mixer.Sound(sound_path)
+            except pygame.error as e:
+                print(f"Error loading sound effect {sound_name}: {e}")
+        
         # Current playing track
         self.current_track = None
         
         # Volume settings
         self.music_volume = 0.5  # 50% volume by default
+        self.sound_effect_volume = 0.7  # 70% volume for sound effects
         pygame.mixer.music.set_volume(self.music_volume)
+        
+        # Set volume for all loaded sound effects
+        for sound in self.loaded_sounds.values():
+            sound.set_volume(self.sound_effect_volume)
     
     def play_music(self, mode):
         """
@@ -56,6 +74,18 @@ class AudioManager:
         else:
             print(f"Unknown game mode: {mode}")
     
+    def play_sound(self, sound_name):
+        """
+        Play a sound effect once.
+        
+        Args:
+            sound_name (str): Name of the sound effect to play
+        """
+        if sound_name in self.loaded_sounds:
+            self.loaded_sounds[sound_name].play()
+        else:
+            print(f"Sound effect not found: {sound_name}")
+    
     def stop_music(self):
         """Stop the currently playing music."""
         pygame.mixer.music.stop()
@@ -71,6 +101,14 @@ class AudioManager:
         # Ensure volume is within range
         self.music_volume = max(0.0, min(1.0, volume))
         pygame.mixer.music.set_volume(self.music_volume)
+        
+        # Also update sound effect volume if music is muted
+        if volume == 0.0:
+            for sound in self.loaded_sounds.values():
+                sound.set_volume(0.0)
+        else:
+            for sound in self.loaded_sounds.values():
+                sound.set_volume(self.sound_effect_volume)
     
     def pause_music(self):
         """Pause the currently playing music."""

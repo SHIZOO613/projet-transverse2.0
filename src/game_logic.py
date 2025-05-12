@@ -121,6 +121,8 @@ class Game(GameBase):
             coin.update(self.scroll_speed)
             if coin.check_collision(self.player):
                 self.coin_count += 1
+                # Play coin sound effect
+                audio_manager.play_sound("coin")
                 
         # Supprimer les pièces collectées ou hors écran
         self.coins = [c for c in self.coins if not c.collected and c.y < SCREEN_HEIGHT + 50]

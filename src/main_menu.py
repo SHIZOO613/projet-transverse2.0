@@ -300,6 +300,74 @@ class SkinButton:
         self.is_pressed = False
         # self.is_selected = False # Do not reset selection on general reset, only on new selection
 
+class SoundButton:
+    def __init__(self, x, y):
+        """Create a sound toggle button at the specified position (top-right corner)"""
+        # Load the sound and nosound images
+        button_path = os.path.join(ASSETS_DIR, "Main menu", "Buttons")
+        
+        try:
+            self.sound_on_img = pygame.image.load(os.path.join(button_path, "sound_logo.png"))
+            self.sound_off_img = pygame.image.load(os.path.join(button_path, "nosound_logo.png"))
+        except pygame.error as e:
+            print(f"Warning: Could not load sound button images: {e}")
+            # Create fallback surfaces
+            self.sound_on_img = pygame.Surface((32, 32))
+            self.sound_on_img.fill(WHITE)
+            self.sound_off_img = pygame.Surface((32, 32))
+            self.sound_off_img.fill(WHITE)
+        
+        # Store original dimensions
+        original_width = self.sound_on_img.get_width()
+        original_height = self.sound_on_img.get_height()
+        
+        # Scale factor to make the button bigger (2.0x original size)
+        scale_factor = 2.0
+        
+        # Scale the images while preserving aspect ratio
+        self.width = int(original_width * scale_factor)
+        self.height = int(original_height * scale_factor)
+        
+        # Resize the images
+        self.sound_on_img = pygame.transform.scale(self.sound_on_img, (self.width, self.height))
+        self.sound_off_img = pygame.transform.scale(self.sound_off_img, (self.width, self.height))
+        
+        # Set the position (top-right corner with 20px margin)
+        self.x = x - self.width - 20
+        self.y = y + 20
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        
+        # Sound state (starts as on)
+        self.sound_on = True
+        # Store default volume
+        self.default_volume = 0.5
+    
+    def draw(self, screen):
+        """Draw the sound button"""
+        if self.sound_on:
+            screen.blit(self.sound_on_img, self.rect)
+        else:
+            screen.blit(self.sound_off_img, self.rect)
+    
+    def check_click(self, pos):
+        """Check if the button was clicked and toggle sound state"""
+        if self.rect.collidepoint(pos):
+            self.sound_on = not self.sound_on
+            
+            if self.sound_on:
+                # Unmute - restore volume
+                audio_manager.set_volume(self.default_volume)
+                print("Sound enabled")
+            else:
+                # Mute - store current volume first if not already muted
+                if audio_manager.music_volume > 0:
+                    self.default_volume = audio_manager.music_volume
+                audio_manager.set_volume(0.0)
+                print("Sound disabled")
+                
+            return True
+        return False
+
 class MainMenu:
     def __init__(self):
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -308,6 +376,9 @@ class MainMenu:
         
         # Play menu theme music
         audio_manager.play_music("menu")
+        
+        # Create sound toggle button in top-right corner
+        self.sound_button = SoundButton(SCREEN_WIDTH, 0)
         
         # Charger les deux frames du logo pour l'animation
         logo_path = os.path.join(ASSETS_DIR, "Main menu", "Logo", "Main Logo.png")
@@ -488,13 +559,21 @@ class MainMenu:
                     elif event.key == pygame.K_c:  # Press 'C' to add coins for testing
                         add_coins(10)
                         print(f"Added 10 coins for testing. Total: {get_total_coins()}")
+                        # Play coin sound when coins are added for testing
+                        audio_manager.play_sound("coin")
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        self.start_button.check_press(event.pos)
-                        self.lava_button.check_press(event.pos)
-                        self.ice_button.check_press(event.pos)
+                        # Check sound button click first
+                        mouse_pos = event.pos
+                        if self.sound_button.check_click(mouse_pos):
+                            # Skip other button checks if sound button was clicked
+                            continue
+                            
+                        self.start_button.check_press(mouse_pos)
+                        self.lava_button.check_press(mouse_pos)
+                        self.ice_button.check_press(mouse_pos)
                         for skin_button in self.skin_buttons:
-                            skin_button.check_press(event.pos)
+                            skin_button.check_press(mouse_pos)
                 elif event.type == pygame.MOUSEBUTTONUP:
                     if event.button == 1:
                         action_taken = False
@@ -531,6 +610,8 @@ class MainMenu:
                                             skin_button.unlock()
                                             unlock_skin(skin_button.image_path)
                                             print(f"Unlocked skin: {skin_button.image_path} for {skin_button.price} coins")
+                                            # Play coin sound when skin is unlocked
+                                            audio_manager.play_sound("coin")
                                         else:
                                             # Not enough coins
                                             print(f"Not enough coins to unlock skin. Need {skin_button.price}, have {get_total_coins()}")
@@ -575,6 +656,9 @@ class MainMenu:
             self.start_button.draw(self.screen)
             self.lava_button.draw(self.screen)
             self.ice_button.draw(self.screen)
+
+            # Draw the sound toggle button
+            self.sound_button.draw(self.screen)
 
             # Disp"SKIN CHOICE"
             if hasattr(self, 'skin_choice_text_surface'): # Check if it's initialized
